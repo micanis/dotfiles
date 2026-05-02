@@ -550,6 +550,28 @@ if ! command -v clangd >/dev/null 2>&1; then
     esac
 fi
 
+# ── WSL: win32yank (clipboard bridge to Windows) ─────────────────────────────
+if grep -qiE "(microsoft|wsl)" /proc/sys/kernel/osrelease 2>/dev/null; then
+    if ! command -v win32yank.exe >/dev/null 2>&1; then
+        case "$ARCH" in
+            x86_64)  WY_ARCH="x64" ;;
+            aarch64) WY_ARCH="arm64" ;;
+            *) WY_ARCH="" ;;
+        esac
+        if [ -n "$WY_ARCH" ] && VER=$(latest_release "equalsraf/win32yank"); then
+            TMP=$(mktemp -d)
+            if curl_extract_zip \
+                "https://github.com/equalsraf/win32yank/releases/download/${VER}/win32yank-${WY_ARCH}.zip" \
+                "$TMP"; then
+                cp "$TMP/win32yank.exe" "$BIN/" && chmod +x "$BIN/win32yank.exe"
+            else
+                echo "WARN: win32yank download failed" >&2
+            fi
+            rm -rf "$TMP"
+        fi
+    fi
+fi
+
 {{ end -}}
 
 # ═════════════════════════════════════════════════════════════════════════════
