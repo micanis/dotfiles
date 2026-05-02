@@ -1,0 +1,165 @@
+# Helix LSP / language configuration
+# Install servers with: chezmoi apply → run_onchange_install-lsp-servers.sh
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+# basedpyright: pyright の上位互換（型チェック）
+# ruff:         高速 linter / formatter (rustで実装)
+
+[[language]]
+name             = "python"
+language-servers = ["basedpyright", "ruff"]
+formatter        = { command = "ruff", args = ["format", "--quiet", "-"] }
+auto-format      = true
+
+[language-server.basedpyright]
+command = "basedpyright-langserver"
+args    = ["--stdio"]
+
+[language-server.basedpyright.config.basedpyright.analysis]
+typeCheckingMode    = "standard"
+autoImportCompletions = true
+
+[language-server.ruff]
+command = "ruff"
+args    = ["server"]
+
+# ─── JavaScript / TypeScript ──────────────────────────────────────────────────
+# typescript-language-server: 型情報・補完
+# biome: 高速 linter / formatter (rustで実装、eslint + prettier の代替)
+
+[[language]]
+name             = "typescript"
+language-servers = ["typescript-language-server", "biome"]
+auto-format      = true
+
+[[language]]
+name             = "javascript"
+language-servers = ["typescript-language-server", "biome"]
+auto-format      = true
+
+[[language]]
+name             = "tsx"
+language-servers = ["typescript-language-server", "biome"]
+auto-format      = true
+
+[[language]]
+name             = "jsx"
+language-servers = ["typescript-language-server", "biome"]
+auto-format      = true
+
+[language-server.biome]
+command = "biome"
+args    = ["lsp-proxy"]
+
+# ─── Go ───────────────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "go"
+language-servers = ["gopls"]
+auto-format      = true
+
+[language-server.gopls]
+command = "gopls"
+
+[language-server.gopls.config]
+gofumpt = true   # gofmt より厳格なフォーマッター
+
+# ─── Rust ─────────────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "rust"
+language-servers = ["rust-analyzer"]
+auto-format      = true
+
+[language-server.rust-analyzer.config]
+check = { command = "clippy", features = "all" }
+
+[language-server.rust-analyzer.config.cargo]
+allFeatures = true
+
+# ─── Markdown ─────────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "markdown"
+language-servers = ["marksman"]
+
+[language-server.marksman]
+command = "marksman"
+args    = ["server"]
+
+# ─── TOML ─────────────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "toml"
+language-servers = ["taplo"]
+auto-format      = true
+
+[language-server.taplo]
+command = "taplo"
+args    = ["lsp", "stdio"]
+
+# ─── YAML ─────────────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "yaml"
+language-servers = ["yaml-language-server"]
+
+[language-server.yaml-language-server]
+command = "yaml-language-server"
+args    = ["--stdio"]
+
+[language-server.yaml-language-server.config.yaml]
+format = { enable = true }
+validate = true
+
+# ─── Bash / Shell ─────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "bash"
+language-servers = ["bash-language-server"]
+
+[language-server.bash-language-server]
+command = "bash-language-server"
+args    = ["start"]
+
+# ─── C / C++ ──────────────────────────────────────────────────────────────────
+# Targeted at competitive programming: clangd for completion / diagnostics,
+# clang-format for formatting. Submissions are compiled with g++ (also
+# installed by run_onchange_01_install.sh).
+
+[[language]]
+name             = "cpp"
+language-servers = ["clangd"]
+formatter        = { command = "clang-format" }
+auto-format      = true
+
+[[language]]
+name             = "c"
+language-servers = ["clangd"]
+formatter        = { command = "clang-format" }
+auto-format      = true
+
+[language-server.clangd]
+command = "clangd"
+args    = ["--background-index", "--clang-tidy", "--header-insertion=never"]
+
+# ─── Java ─────────────────────────────────────────────────────────────────────
+# JDK provided by SDKMAN; LSP is Eclipse JDT-LS (binary `jdtls`).
+
+[[language]]
+name             = "java"
+language-servers = ["jdtls"]
+auto-format      = true
+
+[language-server.jdtls]
+command = "jdtls"
+
+# ─── Dockerfile ───────────────────────────────────────────────────────────────
+
+[[language]]
+name             = "dockerfile"
+language-servers = ["docker-langserver"]
+
+[language-server.docker-langserver]
+command = "docker-langserver"
+args    = ["--stdio"]

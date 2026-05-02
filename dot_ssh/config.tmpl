@@ -1,0 +1,24 @@
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    AddKeysToAgent      yes
+{{ if eq .chezmoi.os "darwin" -}}
+    IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+
+{{- $data := onepasswordRead "op://Personal/chezmoi-ssh-servers/notesPlain" | fromJson }}
+{{- $servers := $data.servers }}
+{{- $defaultUser := $data.defaultUser }}
+{{- $defaultKey := $data.defaultKeyName }}
+{{ range $servers }}
+Host {{ .name }}
+    HostName       {{ .host }}
+    User           {{ if index . "user" }}{{ index . "user" }}{{ else }}{{ $defaultUser }}{{ end }}
+    IdentityFile   ~/.ssh/{{ if index . "keyName" }}{{ index . "keyName" }}{{ else }}{{ $defaultKey }}{{ end }}
+    {{- if index . "port" }}
+    Port           {{ index . "port" }}
+    {{- end }}
+    {{- if index . "jumpHost" }}
+    ProxyJump      {{ index . "jumpHost" }}
+    {{- end }}
+{{ end }}
+{{- end }}

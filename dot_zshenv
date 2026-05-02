@@ -1,0 +1,5 @@
+# ~/.zshenv — managed by chezmoi
+# Sourced by zsh for all shell types (login, interactive, scripts)
+# Use this for environment variables that must be inherited by child processes.
+
+export XDG_CONFIG_HOME="$HOME/.config"

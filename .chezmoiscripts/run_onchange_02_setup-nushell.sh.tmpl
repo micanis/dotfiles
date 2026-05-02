@@ -1,0 +1,56 @@
+#!/bin/sh
+# Register nushell as a valid login shell and install third-party autoload
+# modules (starship prompt, zoxide, direnv hook). Files dropped into
+# $nu.data-dir/vendor/autoload are sourced automatically on every nu startup —
+# this is how Zellij-spawned `nu` shells get the prompt and integrations.
+#
+# Reruns when this file changes.
+
+set -e
+
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+
+# root (Docker) → no sudo
+if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+
+NU_BIN=$(command -v nu 2>/dev/null || true)
+if [ -z "$NU_BIN" ]; then
+    echo "WARN: nu not found in PATH, skipping nushell setup" >&2
+    exit 0
+fi
+
+# ── Register in /etc/shells (so chsh -s works) ────────────────────────────────
+if [ -f /etc/shells ] && ! grep -qxF "$NU_BIN" /etc/shells; then
+    echo "$NU_BIN" | $SUDO tee -a /etc/shells >/dev/null
+    echo "✓ Added $NU_BIN to /etc/shells"
+fi
+
+# ── Resolve vendor/autoload directory ─────────────────────────────────────────
+NU_DATA_DIR=$("$NU_BIN" -c '$nu.data-dir' 2>/dev/null || true)
+if [ -z "$NU_DATA_DIR" ]; then
+    echo "WARN: could not resolve nu data-dir, skipping autoload modules" >&2
+    exit 0
+fi
+AUTOLOAD_DIR="$NU_DATA_DIR/vendor/autoload"
+mkdir -p "$AUTOLOAD_DIR"
+
+gen_autoload() {
+    bin="$1" name="$2"
+    shift 2
+    if command -v "$bin" >/dev/null 2>&1; then
+        if "$@" > "$AUTOLOAD_DIR/$name.nu" 2>/dev/null; then
+            echo "✓ $name autoload installed"
+        else
+            echo "WARN: failed to generate $name autoload" >&2
+            rm -f "$AUTOLOAD_DIR/$name.nu"
+        fi
+    else
+        echo "WARN: $bin not found, skipping $name autoload" >&2
+    fi
+}
+
+gen_autoload starship starship  starship init nu
+gen_autoload zoxide   zoxide    zoxide   init nushell
+gen_autoload direnv   direnv    direnv   hook nu
+
+echo "✓ Nushell setup complete (binary: $NU_BIN)"

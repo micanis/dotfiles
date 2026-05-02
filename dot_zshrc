@@ -1,0 +1,23 @@
+# ~/.zshrc — managed by chezmoi
+# Read by interactive zsh shells.
+
+# Non-interactive shells don't need the rest
+[[ -o interactive ]] || return
+
+# Source ~/.profile so PATH additions apply to interactive zsh too
+[ -f "$HOME/.profile" ] && emulate sh -c '. "$HOME/.profile"'
+
+# ── Tool hooks ────────────────────────────────────────────────────────────────
+# starship: prompt
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+
+# zoxide: smart cd (defines `z` and `zi`)
+command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+
+# direnv: per-directory env vars
+command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+
+# ── SDKMAN! ───────────────────────────────────────────────────────────────────
+# Installed by run_onchange_01_install.sh; init script sets up `sdk` + JAVA_HOME.
+export SDKMAN_DIR="$HOME/.sdkman"
+[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"

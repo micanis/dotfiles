@@ -1,0 +1,26 @@
+# Global clangd configuration — applies when no compile_commands.json is found
+# (typical for single-file competitive-programming sources).
+#
+# Docs: https://clangd.llvm.org/config
+
+CompileFlags:
+  Add:
+    - -std=c++20
+    - -Wall
+    - -Wextra
+    - -Wshadow
+    - -O2
+    # Common competitive-programming convenience headers — no-ops if absent.
+    - -DLOCAL
+
+Diagnostics:
+  UnusedIncludes: None
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - performance-*
+      - readability-*
+    Remove:
+      - readability-magic-numbers
+      - readability-identifier-length
+      - readability-implicit-bool-conversion

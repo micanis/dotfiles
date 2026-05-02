@@ -1,0 +1,29 @@
+# Conditional deployment driven by data vars from chezmoi.toml.tmpl.
+# Anything emitted inside an {{`{{ if ... }}`}} block is ignored when the
+# condition holds. See run_onchange_01_install.sh for matching install logic.
+
+# ── Shell rc files: only the matching one for the host's interactive shell ────
+{{ if eq .chezmoi.os "darwin" }}
+dot_bashrc
+{{ end }}
+
+{{ if eq .chezmoi.os "linux" }}
+dot_zshrc
+dot_zshenv
+{{ end }}
+
+{{ if eq .chezmoi.os "windows" }}
+dot_bashrc
+dot_zshrc
+dot_zshenv
+dot_profile
+{{ end }}
+
+# ── Ghostty: GUI-only config; skip on CLI-only hosts and on Windows ───────────
+{{ if not .is_display }}
+dot_config/ghostty
+{{ end }}
+
+{{ if eq .chezmoi.os "windows" }}
+dot_config/ghostty
+{{ end }}

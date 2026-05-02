@@ -1,0 +1,15 @@
+# ~/.profile — managed by chezmoi
+# Read by login shells (bash, dash, sh) on most distributions
+
+# Source .bashrc if running bash interactively
+[ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+
+# Local binaries (chezmoi-managed tools: zellij, nu, hx, starship, etc.)
+[ -d "$HOME/.local/bin" ]             && PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/.cargo/bin" ]             && PATH="$HOME/.cargo/bin:$PATH"
+[ -d "$HOME/go/bin" ]                 && PATH="$HOME/go/bin:$PATH"
+[ -d "/usr/local/go/bin" ]            && PATH="/usr/local/go/bin:$PATH"
+[ -d "$HOME/.bun/bin" ]               && PATH="$HOME/.bun/bin:$PATH"
+[ -d "$HOME/.local/share/uv/bin" ]    && PATH="$HOME/.local/share/uv/bin:$PATH"
+
+export PATH

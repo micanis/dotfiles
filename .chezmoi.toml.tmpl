@@ -1,0 +1,13 @@
+{{- $osid := .chezmoi.os -}}
+{{- if hasKey .chezmoi.osRelease "id" -}}
+{{-   $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.id -}}
+{{- end -}}
+
+{{ $has_display := or (env "DISPLAY") (env "WAYLAND_DISPLAY") | not | not -}}
+
+{{ $has_sudo := ne (output "id" "-u" | trim) "0" }}
+
+[data]
+  osid = {{ $osid | quote }}
+  is_display = {{ $has_display }}
+  SUDO = {{ ternary "sudo" "" $has_sudo | quote }}

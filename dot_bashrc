@@ -1,0 +1,9 @@
+# ~/.bashrc — managed by chezmoi
+# Read by interactive bash shells (including Docker exec/run -it)
+
+# Non-interactive shells don't need the rest
+[ -z "$PS1" ] && return
+
+# SDKMAN! (managed by run_onchange_01_install.sh)
+export SDKMAN_DIR="$HOME/.sdkman"
+[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"

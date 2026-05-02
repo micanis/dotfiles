@@ -1,0 +1,588 @@
+#!/usr/bin/env bash
+# Install packages and language toolchains.
+# Reruns when this file changes (new packages added).
+#
+# Branches by .chezmoi.os at template time: darwin uses Homebrew, linux uses
+# package-manager auto-detection (apt / dnf / pacman / zypper / apk).
+
+set -euo pipefail
+
+BIN="$HOME/.local/bin"
+mkdir -p "$BIN"
+export PATH="$BIN:$PATH"
+
+{{ if eq .chezmoi.os "darwin" -}}
+# ═════════════════════════════════════════════════════════════════════════════
+# macOS
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── Homebrew ──────────────────────────────────────────────────────────────────
+if ! command -v brew >/dev/null 2>&1; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+
+brew_install() {
+    brew list "$1" >/dev/null 2>&1 || brew install "$1"
+}
+brew_cask_install() {
+    brew list --cask "$1" >/dev/null 2>&1 || brew install --cask "$1"
+}
+
+# ── Core tools ────────────────────────────────────────────────────────────────
+brew_install 1password-cli
+brew_install zellij
+brew_install nushell
+brew_install helix
+brew_install starship
+
+# ── Terminal (GUI) ────────────────────────────────────────────────────────────
+{{ if .is_display -}}
+brew_cask_install ghostty
+{{- end }}
+
+# ── Modern CLI utilities ──────────────────────────────────────────────────────
+brew_install ripgrep      # rg — fast grep
+brew_install fd           # find replacement
+brew_install bat          # cat with syntax highlighting
+brew_install eza          # ls replacement
+brew_install zoxide       # smart cd
+brew_install fzf          # fuzzy finder
+brew_install git-delta    # nicer git diff (binary: delta)
+brew_install gh           # GitHub CLI
+brew_install lazygit      # TUI git
+brew_install dust         # du replacement
+brew_install procs        # ps replacement
+brew_install hyperfine    # benchmarking
+brew_install tokei        # code statistics
+brew_install jq           # JSON processor
+brew_install yq           # YAML processor
+brew_install direnv       # per-project env vars
+
+# ── LSP servers (binary distros) ──────────────────────────────────────────────
+brew_install marksman     # Markdown LSP
+brew_install taplo        # TOML LSP / formatter
+brew_install llvm         # provides clangd + clang-format for C/C++
+brew_install jdtls        # Java LSP (Eclipse JDT-LS)
+
+# ── Language runtimes ─────────────────────────────────────────────────────────
+brew_install go
+
+# Rust via rustup
+if ! command -v rustup >/dev/null 2>&1; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+fi
+"$HOME/.cargo/bin/rustup" toolchain install stable --no-self-update 2>/dev/null || true
+
+# uv — Python toolchain manager
+brew_install uv
+
+# bun — JS/TS runtime and package manager
+if ! command -v bun >/dev/null 2>&1; then
+    curl -fsSL https://bun.sh/install | bash
+fi
+
+# ── C++ for competitive programming ───────────────────────────────────────────
+# macOS ships clang/clang++ via Xcode CLT; install GCC for parity with online
+# judges (Codeforces / AtCoder use g++). brew's binary is `g++-<major>`.
+brew_install gcc
+
+{{ else if eq .chezmoi.os "linux" -}}
+# ═════════════════════════════════════════════════════════════════════════════
+# Linux
+# ═════════════════════════════════════════════════════════════════════════════
+
+ARCH=$(uname -m)
+
+# root (e.g. Docker) → no sudo
+if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+
+# ── Detect package manager ────────────────────────────────────────────────────
+if   command -v apt-get >/dev/null 2>&1; then PM="apt"
+elif command -v dnf     >/dev/null 2>&1; then PM="dnf"
+elif command -v pacman  >/dev/null 2>&1; then PM="pacman"
+elif command -v zypper  >/dev/null 2>&1; then PM="zypper"
+elif command -v apk     >/dev/null 2>&1; then PM="apk"
+else echo "ERROR: No supported package manager found" >&2; exit 1
+fi
+
+pkg_install() {
+    case "$PM" in
+        apt)    $SUDO apt-get install -y "$@" ;;
+        dnf)    $SUDO dnf install -y "$@" ;;
+        pacman) $SUDO pacman -S --noconfirm "$@" ;;
+        zypper) $SUDO zypper install -y "$@" ;;
+        apk)    $SUDO apk add "$@" ;;
+    esac
+}
+
+# ── Base dependencies ─────────────────────────────────────────────────────────
+case "$PM" in
+    apt)
+        $SUDO apt-get update -qq
+        pkg_install curl wget git build-essential unzip zip
+        ;;
+    dnf)
+        pkg_install curl wget git gcc gcc-c++ make unzip zip
+        ;;
+    pacman)
+        $SUDO pacman -Sy --noconfirm
+        pkg_install curl wget git base-devel unzip zip
+        ;;
+    zypper)
+        $SUDO zypper refresh -q
+        pkg_install curl wget git gcc gcc-c++ make unzip zip
+        ;;
+    apk)
+        $SUDO apk update -q
+        pkg_install curl wget git build-base unzip zip
+        ;;
+esac
+
+# ── Helper: latest GitHub release tag (with HTML-redirect fallback) ──────────
+latest_release() {
+    local repo="$1"
+    local auth_header=""
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        auth_header="Authorization: Bearer ${GITHUB_TOKEN}"
+    fi
+
+    local http_code tmp_body
+    tmp_body=$(mktemp /tmp/gh-rel.XXXXXX)
+    http_code=$(curl -sS --retry 2 --retry-delay 3 \
+        ${auth_header:+-H "$auth_header"} \
+        -w "%{http_code}" -o "$tmp_body" \
+        "https://api.github.com/repos/${repo}/releases/latest")
+
+    if [ "$http_code" = "200" ]; then
+        local tag
+        tag=$(grep '"tag_name"' "$tmp_body" | head -1 | cut -d'"' -f4)
+        rm -f "$tmp_body"
+        if [ -n "$tag" ]; then echo "$tag"; return 0; fi
+    fi
+    rm -f "$tmp_body"
+
+    echo "WARN: GitHub API returned HTTP ${http_code} for ${repo} — trying HTML redirect" >&2
+    local redirect_url tag2
+    redirect_url=$(curl -sSL --max-redirs 5 \
+        -o /dev/null -w "%{url_effective}" \
+        "https://github.com/${repo}/releases/latest" 2>/dev/null)
+    tag2="${redirect_url##*/}"
+    if [ -n "$tag2" ] && [ "$tag2" != "latest" ]; then echo "$tag2"; return 0; fi
+
+    echo "ERROR: Could not determine latest release for ${repo}" >&2
+    return 1
+}
+
+curl_extract_tgz() {
+    local url="$1" dest="$2" tmp
+    tmp=$(mktemp /tmp/chezmoi-dl.XXXXXX)
+    curl -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+    tar xz -C "$dest" -f "$tmp"
+    rm -f "$tmp"
+}
+curl_extract_txz() {
+    local url="$1" dest="$2" tmp
+    tmp=$(mktemp /tmp/chezmoi-dl.XXXXXX)
+    curl -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+    tar xJ -C "$dest" -f "$tmp"
+    rm -f "$tmp"
+}
+curl_install_bin() {
+    local url="$1" name="$2" gzipped="${3:-no}" tmp
+    tmp=$(mktemp /tmp/chezmoi-bin.XXXXXX)
+    curl -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+    if [ "$gzipped" = "gz" ]; then
+        gunzip -c "$tmp" > "$BIN/$name"
+    else
+        mv "$tmp" "$BIN/$name"
+    fi
+    chmod +x "$BIN/$name"
+    rm -f "$tmp"
+}
+curl_extract_zip() {
+    local url="$1" dest="$2" tmp
+    tmp=$(mktemp /tmp/chezmoi-zip.XXXXXX)
+    curl -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+    unzip -o -q "$tmp" -d "$dest"
+    rm -f "$tmp"
+}
+
+# ── Starship ──────────────────────────────────────────────────────────────────
+if ! command -v starship >/dev/null 2>&1; then
+    curl -sS https://starship.rs/install.sh | sh -s -- -y --bin-dir "$BIN"
+fi
+
+# ── Zellij ────────────────────────────────────────────────────────────────────
+if ! command -v zellij >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk) pkg_install zellij ;;
+        *)
+            if VER=$(latest_release "zellij-org/zellij"); then
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+                    aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    curl_extract_tgz \
+                        "https://github.com/zellij-org/zellij/releases/download/${VER}/zellij-${TRIPLE}.tar.gz" \
+                        "$BIN" \
+                    && chmod +x "$BIN/zellij" \
+                    || echo "WARN: zellij download failed" >&2
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── Nushell ───────────────────────────────────────────────────────────────────
+if ! command -v nu >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk) pkg_install nushell ;;
+        apt|dnf|zypper)
+            if VER=$(latest_release "nushell/nushell"); then
+                VER_CLEAN="${VER#v}"
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+                    aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    TMP=$(mktemp -d)
+                    if curl_extract_tgz \
+                        "https://github.com/nushell/nushell/releases/download/${VER}/nu-${VER_CLEAN}-${TRIPLE}.tar.gz" \
+                        "$TMP"; then
+                        cp "$TMP/nu-${VER_CLEAN}-${TRIPLE}/nu" "$BIN/"
+                    fi
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── Helix ─────────────────────────────────────────────────────────────────────
+if ! command -v hx >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk|dnf) pkg_install helix ;;
+        apt|zypper)
+            if VER=$(latest_release "helix-editor/helix"); then
+                VER_CLEAN="${VER#v}"
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-linux" ;;
+                    aarch64) TRIPLE="aarch64-linux" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    TMP=$(mktemp -d)
+                    if curl_extract_txz \
+                        "https://github.com/helix-editor/helix/releases/download/${VER}/helix-${VER_CLEAN}-${TRIPLE}.tar.xz" \
+                        "$TMP"; then
+                        cp "$TMP/helix-${VER_CLEAN}-${TRIPLE}/hx" "$BIN/"
+                        mkdir -p ~/.config/helix
+                        cp -r "$TMP/helix-${VER_CLEAN}-${TRIPLE}/runtime" ~/.config/helix/
+                    fi
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── Go ────────────────────────────────────────────────────────────────────────
+if ! command -v go >/dev/null 2>&1; then
+    case "$PM" in
+        pacman) pkg_install go ;;
+        *)
+            GO_VER=$(curl -fsSL "https://go.dev/VERSION?m=text" | head -1)
+            case "$ARCH" in
+                x86_64)  GO_ARCH="amd64" ;;
+                aarch64) GO_ARCH="arm64" ;;
+                *)        GO_ARCH="amd64" ;;
+            esac
+            curl -fsSL "https://go.dev/dl/${GO_VER}.linux-${GO_ARCH}.tar.gz" \
+                | $SUDO tar xz -C /usr/local
+            export PATH="/usr/local/go/bin:$PATH"
+            ;;
+    esac
+fi
+
+# ── Rust / Cargo ──────────────────────────────────────────────────────────────
+if ! command -v cargo >/dev/null 2>&1; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# ── uv (Python) / bun (JS) ────────────────────────────────────────────────────
+command -v uv  >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+command -v bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
+
+# ── ripgrep / fd / bat ────────────────────────────────────────────────────────
+command -v rg  >/dev/null 2>&1 || pkg_install ripgrep || echo "WARN: ripgrep skipped" >&2
+if ! command -v fd >/dev/null 2>&1; then
+    case "$PM" in
+        apt) pkg_install fd-find && command -v fdfind >/dev/null 2>&1 && ln -sf "$(command -v fdfind)" "$BIN/fd" ;;
+        *)   pkg_install fd || echo "WARN: fd skipped" >&2 ;;
+    esac
+fi
+if ! command -v bat >/dev/null 2>&1; then
+    case "$PM" in
+        apt) pkg_install bat && command -v batcat >/dev/null 2>&1 && ln -sf "$(command -v batcat)" "$BIN/bat" ;;
+        *)   pkg_install bat || echo "WARN: bat skipped" >&2 ;;
+    esac
+fi
+
+# ── eza ───────────────────────────────────────────────────────────────────────
+if ! command -v eza >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk|dnf) pkg_install eza || echo "WARN: eza skipped" >&2 ;;
+        apt|zypper)
+            if VER=$(latest_release "eza-community/eza"); then
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+                    aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    curl_extract_tgz \
+                        "https://github.com/eza-community/eza/releases/download/${VER}/eza_${TRIPLE}.tar.gz" \
+                        "$BIN" && chmod +x "$BIN/eza" \
+                    || echo "WARN: eza download failed" >&2
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── zoxide / fzf ──────────────────────────────────────────────────────────────
+command -v zoxide >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash -s -- --bin-dir "$BIN" || echo "WARN: zoxide install failed" >&2
+command -v fzf >/dev/null 2>&1 || pkg_install fzf || echo "WARN: fzf skipped" >&2
+
+# ── git-delta ─────────────────────────────────────────────────────────────────
+if ! command -v delta >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|dnf|zypper) pkg_install git-delta || echo "WARN: git-delta skipped" >&2 ;;
+        apk) pkg_install delta || echo "WARN: delta skipped" >&2 ;;
+        apt)
+            if VER=$(latest_release "dandavison/delta"); then
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+                    aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    TMP=$(mktemp -d)
+                    if curl_extract_tgz \
+                        "https://github.com/dandavison/delta/releases/download/${VER}/delta-${VER}-${TRIPLE}.tar.gz" \
+                        "$TMP"; then
+                        cp "$TMP/delta-${VER}-${TRIPLE}/delta" "$BIN/" && chmod +x "$BIN/delta"
+                    fi
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── gh / lazygit / dust / procs ───────────────────────────────────────────────
+if ! command -v gh >/dev/null 2>&1; then
+    if ! pkg_install gh 2>/dev/null; then
+        if VER=$(latest_release "cli/cli"); then
+            VER_CLEAN="${VER#v}"
+            case "$ARCH" in
+                x86_64)  GH_ARCH="amd64" ;;
+                aarch64) GH_ARCH="arm64" ;;
+                *) GH_ARCH="" ;;
+            esac
+            if [ -n "$GH_ARCH" ]; then
+                TMP=$(mktemp -d)
+                curl_extract_tgz \
+                    "https://github.com/cli/cli/releases/download/${VER}/gh_${VER_CLEAN}_linux_${GH_ARCH}.tar.gz" \
+                    "$TMP" \
+                && cp "$TMP/gh_${VER_CLEAN}_linux_${GH_ARCH}/bin/gh" "$BIN/" \
+                && chmod +x "$BIN/gh" || echo "WARN: gh download failed" >&2
+                rm -rf "$TMP"
+            fi
+        fi
+    fi
+fi
+
+if ! command -v lazygit >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk) pkg_install lazygit || echo "WARN: lazygit skipped" >&2 ;;
+        *)
+            if VER=$(latest_release "jesseduffield/lazygit"); then
+                VER_CLEAN="${VER#v}"
+                case "$ARCH" in
+                    x86_64)  ARCH_NAME="x86_64" ;;
+                    aarch64) ARCH_NAME="arm64" ;;
+                    *) ARCH_NAME="" ;;
+                esac
+                if [ -n "$ARCH_NAME" ]; then
+                    TMP=$(mktemp -d)
+                    curl_extract_tgz \
+                        "https://github.com/jesseduffield/lazygit/releases/download/${VER}/lazygit_${VER_CLEAN}_Linux_${ARCH_NAME}.tar.gz" \
+                        "$TMP" \
+                    && cp "$TMP/lazygit" "$BIN/" && chmod +x "$BIN/lazygit" \
+                    || echo "WARN: lazygit download failed" >&2
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+if ! command -v dust >/dev/null 2>&1; then
+    case "$PM" in
+        pacman|apk) pkg_install dust || echo "WARN: dust skipped" >&2 ;;
+        *)
+            if VER=$(latest_release "bootandy/dust"); then
+                case "$ARCH" in
+                    x86_64)  TRIPLE="x86_64-unknown-linux-musl" ;;
+                    aarch64) TRIPLE="aarch64-unknown-linux-musl" ;;
+                    *) TRIPLE="" ;;
+                esac
+                if [ -n "$TRIPLE" ]; then
+                    TMP=$(mktemp -d)
+                    curl_extract_tgz \
+                        "https://github.com/bootandy/dust/releases/download/${VER}/dust-${VER}-${TRIPLE}.tar.gz" \
+                        "$TMP" \
+                    && cp "$TMP/dust-${VER}-${TRIPLE}/dust" "$BIN/" && chmod +x "$BIN/dust" \
+                    || echo "WARN: dust download failed" >&2
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+if ! command -v procs >/dev/null 2>&1; then
+    case "$PM" in
+        pacman) pkg_install procs || echo "WARN: procs skipped" >&2 ;;
+        *)
+            if VER=$(latest_release "dalance/procs"); then
+                case "$ARCH" in
+                    x86_64)  PROCS_ARCH="x86_64" ;;
+                    aarch64) PROCS_ARCH="aarch64" ;;
+                    *) PROCS_ARCH="" ;;
+                esac
+                if [ -n "$PROCS_ARCH" ]; then
+                    TMP=$(mktemp -d)
+                    curl_extract_zip \
+                        "https://github.com/dalance/procs/releases/download/${VER}/procs-${VER}-${PROCS_ARCH}-linux.zip" \
+                        "$TMP" \
+                    && cp "$TMP/procs" "$BIN/" && chmod +x "$BIN/procs" \
+                    || echo "WARN: procs download failed" >&2
+                    rm -rf "$TMP"
+                fi
+            fi
+            ;;
+    esac
+fi
+
+# ── hyperfine / tokei / jq / yq / direnv ──────────────────────────────────────
+command -v hyperfine >/dev/null 2>&1 || pkg_install hyperfine || echo "WARN: hyperfine skipped" >&2
+
+if ! command -v tokei >/dev/null 2>&1; then
+    pkg_install tokei 2>/dev/null \
+        || (command -v cargo >/dev/null 2>&1 && cargo install tokei) \
+        || echo "WARN: tokei skipped" >&2
+fi
+
+command -v jq >/dev/null 2>&1 || pkg_install jq || echo "WARN: jq skipped" >&2
+
+if ! command -v yq >/dev/null 2>&1; then
+    if VER=$(latest_release "mikefarah/yq"); then
+        case "$ARCH" in
+            x86_64)  YQ_ARCH="amd64" ;;
+            aarch64) YQ_ARCH="arm64" ;;
+            *) YQ_ARCH="" ;;
+        esac
+        if [ -n "$YQ_ARCH" ]; then
+            curl_install_bin \
+                "https://github.com/mikefarah/yq/releases/download/${VER}/yq_linux_${YQ_ARCH}" "yq" \
+            || echo "WARN: yq download failed" >&2
+        fi
+    fi
+fi
+
+command -v direnv >/dev/null 2>&1 || pkg_install direnv || echo "WARN: direnv skipped" >&2
+
+# ── LSP server binaries: marksman / taplo ────────────────────────────────────
+if ! command -v marksman >/dev/null 2>&1; then
+    if VER=$(latest_release "artempyanykh/marksman"); then
+        case "$ARCH" in
+            x86_64)
+                curl_install_bin \
+                    "https://github.com/artempyanykh/marksman/releases/download/${VER}/marksman-linux-x64" \
+                    "marksman" || echo "WARN: marksman download failed" >&2
+                ;;
+            *) echo "WARN: marksman has no prebuilt binary for $ARCH" >&2 ;;
+        esac
+    fi
+fi
+
+if ! command -v taplo >/dev/null 2>&1; then
+    if VER=$(latest_release "tamasfe/taplo"); then
+        case "$ARCH" in
+            x86_64)  TAPLO_ARCH="x86_64" ;;
+            aarch64) TAPLO_ARCH="aarch64" ;;
+            *) TAPLO_ARCH="" ;;
+        esac
+        if [ -n "$TAPLO_ARCH" ]; then
+            curl_install_bin \
+                "https://github.com/tamasfe/taplo/releases/download/${VER}/taplo-linux-${TAPLO_ARCH}.gz" \
+                "taplo" "gz" || echo "WARN: taplo download failed" >&2
+        fi
+    fi
+fi
+
+# ── C++ for competitive programming: g++ + clangd + clang-format ─────────────
+# g++ is already present from base-deps (build-essential / base-devel /
+# gcc-c++). Add clangd + clang-format from the distro package.
+if ! command -v clangd >/dev/null 2>&1; then
+    case "$PM" in
+        apt)    pkg_install clangd clang-format || echo "WARN: clangd skipped" >&2 ;;
+        dnf)    pkg_install clang-tools-extra clang || echo "WARN: clangd skipped" >&2 ;;
+        pacman) pkg_install clang || echo "WARN: clang skipped" >&2 ;;
+        zypper) pkg_install clang-tools llvm-clang || echo "WARN: clangd skipped" >&2 ;;
+        apk)    pkg_install clang-extra-tools clang || echo "WARN: clangd skipped" >&2 ;;
+    esac
+fi
+
+{{ end -}}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Cross-platform installs (run on both darwin and linux)
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── SDKMAN! + Java ────────────────────────────────────────────────────────────
+# SDKMAN bootstraps to ~/.sdkman; rcupdate=false keeps the installer from
+# patching login files (chezmoi-managed dot_zshrc / dot_bashrc source the init
+# script themselves). Then `sdk install java` selects SDKMAN's default JDK
+# (currently a recent Temurin LTS).
+export SDKMAN_DIR="$HOME/.sdkman"
+if [ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
+    curl -fsSL "https://get.sdkman.io?rcupdate=false" | bash
+fi
+
+if [ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
+    set +u   # sdkman-init.sh references unset vars
+    # shellcheck disable=SC1091
+    . "$SDKMAN_DIR/bin/sdkman-init.sh"
+    if ! sdk current java 2>/dev/null | grep -q 'Using java'; then
+        sdk install java </dev/null || echo "WARN: sdk install java failed" >&2
+    fi
+    set -u
+else
+    echo "WARN: SDKMAN init script missing — Java install skipped" >&2
+fi
+
+# ── Devbox (jetify, nix-backed) ──────────────────────────────────────────────
+# CLI only; project/global devbox.json is intentionally not provisioned yet.
+if ! command -v devbox >/dev/null 2>&1; then
+    curl -fsSL https://get.jetify.com/devbox | bash -s -- -f \
+        || echo "WARN: devbox install failed" >&2
+fi
+
+echo "✓ Install script complete"
