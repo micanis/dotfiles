@@ -13,3 +13,6 @@
 [ -d "$HOME/.local/share/uv/bin" ]    && PATH="$HOME/.local/share/uv/bin:$PATH"
 
 export PATH
+
+# True color (24-bit) — Linux 環境で Helix 等のテーマカラーが 256 色に丸められないように明示
+export COLORTERM="truecolor"

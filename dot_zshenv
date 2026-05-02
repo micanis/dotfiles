@@ -3,3 +3,6 @@
 # Use this for environment variables that must be inherited by child processes.
 
 export XDG_CONFIG_HOME="$HOME/.config"
+
+# True color (24-bit) — Linux 環境で Helix 等のテーマカラーが 256 色に丸められないように明示
+export COLORTERM="truecolor"
