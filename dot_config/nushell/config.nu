@@ -34,4 +34,11 @@ $env.config = {
         mode:       "rounded"
         index_mode: "always"
     }
+
+    hooks: {
+        pre_prompt: [{||
+            if (which direnv | is-empty) { return }
+            direnv export json | from json | default {} | load-env
+        }]
+    }
 }
