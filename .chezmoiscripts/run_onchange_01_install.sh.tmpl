@@ -64,12 +64,6 @@ brew_install taplo        # TOML LSP / formatter
 brew_install llvm         # provides clangd + clang-format for C/C++
 brew_install jdtls        # Java LSP (Eclipse JDT-LS)
 
-# ── devbox (per-project language environments via Nix) ───────────────────────
-# Languages and their LSPs are defined per project in devbox.json — not global.
-if ! command -v devbox >/dev/null 2>&1; then
-    curl -fsSL https://get.jetify.com/devbox | bash
-fi
-
 # ── C++ for competitive programming ───────────────────────────────────────────
 # macOS ships clang/clang++ via Xcode CLT; install GCC for parity with online
 # judges (Codeforces / AtCoder use g++). brew's binary is `g++-<major>`.
@@ -276,12 +270,6 @@ if ! command -v hx >/dev/null 2>&1; then
             fi
             ;;
     esac
-fi
-
-# ── devbox (per-project language environments via Nix) ───────────────────────
-# Languages and their LSPs are defined per project in devbox.json — not global.
-if ! command -v devbox >/dev/null 2>&1; then
-    curl -fsSL https://get.jetify.com/devbox | bash
 fi
 
 # ── ripgrep / fd / bat ────────────────────────────────────────────────────────
@@ -566,8 +554,35 @@ else
     echo "WARN: SDKMAN init script missing — Java install skipped" >&2
 fi
 
+# ── Nix (required by devbox) ──────────────────────────────────────────────────
+# Determinate Systems installer: faster than upstream, has uninstall, handles
+# macOS APFS volume creation cleanly. On systemd-less Linux (Docker / WSL
+# without systemd) fall back to --init none (single-user, no daemon).
+if ! command -v nix >/dev/null 2>&1 && [ ! -e /nix ]; then
+    if [ "$(uname)" = "Linux" ] && [ ! -d /run/systemd/system ]; then
+        curl -fsSL https://install.determinate.systems/nix \
+            | sh -s -- install linux --no-confirm --init none \
+            || echo "WARN: Nix install failed" >&2
+    else
+        curl -fsSL https://install.determinate.systems/nix \
+            | sh -s -- install --no-confirm --determinate \
+            || echo "WARN: Nix install failed" >&2
+    fi
+fi
+
+# Make `nix` visible to subsequent commands in this script (devbox install
+# itself doesn't need it, but `devbox add` / `devbox shell` do, and chezmoi
+# may run them later in the same `chezmoi apply`).
+if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+    # shellcheck disable=SC1091
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+elif [ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+
 # ── Devbox (jetify, nix-backed) ──────────────────────────────────────────────
-# CLI only; project/global devbox.json is intentionally not provisioned yet.
+# CLI only; per-project devbox.json templates live in templates/.
 if ! command -v devbox >/dev/null 2>&1; then
     curl -fsSL https://get.jetify.com/devbox | bash -s -- -f \
         || echo "WARN: devbox install failed" >&2
