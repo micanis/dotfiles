@@ -4,6 +4,9 @@
 # Non-interactive shells don't need the rest
 [ -z "$PS1" ] && return
 
+# direnv: per-project env (devbox generate direnv writes .envrc using `use devbox`)
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook bash)"
+
 # SDKMAN! (managed by run_onchange_01_install.sh)
 export SDKMAN_DIR="$HOME/.sdkman"
 [ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"

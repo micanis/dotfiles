@@ -2,6 +2,9 @@
 # Anything emitted inside an {{`{{ if ... }}`}} block is ignored when the
 # condition holds. See run_onchange_01_install.sh for matching install logic.
 
+# ── Reference material — not deployed to $HOME ────────────────────────────────
+templates/**
+
 # ── Shell rc files: only the matching one for the host's interactive shell ────
 {{ if eq .chezmoi.os "darwin" }}
 dot_bashrc

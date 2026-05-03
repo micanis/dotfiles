@@ -17,9 +17,6 @@ theme = Mariana
 background-opacity = 0.85
 background-blur-radius = 0
 
-# タイトルバー非表示
-macos-titlebar-style = hidden
-
 # ウィンドウ内の余白を入れて圧迫感を減らす
 window-padding-x = 10
 window-padding-y = 10
