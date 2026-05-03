@@ -8,7 +8,7 @@
 
 set -e
 
-export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # root (Docker) → no sudo
 if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi

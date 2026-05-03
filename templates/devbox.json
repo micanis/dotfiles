@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+
+  "packages": [
+    "python@3.12",
+    "basedpyright@latest",
+    "ruff@latest",
+
+    "go@latest",
+    "gopls@latest",
+
+    "rustup@latest",
+
+    "nodejs@22",
+    "typescript-language-server@latest",
+    "biome@latest",
+
+    "yaml-language-server@latest",
+    "bash-language-server@latest"
+  ],
+
+  "shell": {
+    "init_hook": [
+      "command -v nu >/dev/null && [ -z \"$DEVBOX_NU\" ] && export DEVBOX_NU=1 && exec nu"
+    ],
+    "scripts": {
+      "fmt": "ruff format . && biome format --write .",
+      "lint": "ruff check . && biome lint ."
+    }
+  }
+}

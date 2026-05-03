@@ -1,11 +1,8 @@
 # Nushell environment — sourced before config.nu
 
-# PATH (chezmoi-managed tool locations)
+# PATH (chezmoi-managed tool location — devbox/direnv handle per-project tools)
 $env.PATH = ($env.PATH | split row (char esep) | prepend [
-    ($env.HOME | path join ".local" "bin")    # local binaries (chezmoi installs here on Linux; uv tools symlink here)
-    ($env.HOME | path join ".cargo" "bin")    # rust / cargo tools
-    ($env.HOME | path join "go"     "bin")    # go tools (gopls, etc.)
-    ($env.HOME | path join ".bun"   "bin")    # bun global packages
+    ($env.HOME | path join ".local" "bin")    # chezmoi-installed binaries (devbox, hx, nu, starship, ...)
 ] | uniq)
 
 # Editor

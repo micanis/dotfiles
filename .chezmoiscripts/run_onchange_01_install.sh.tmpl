@@ -64,21 +64,10 @@ brew_install taplo        # TOML LSP / formatter
 brew_install llvm         # provides clangd + clang-format for C/C++
 brew_install jdtls        # Java LSP (Eclipse JDT-LS)
 
-# ── Language runtimes ─────────────────────────────────────────────────────────
-brew_install go
-
-# Rust via rustup
-if ! command -v rustup >/dev/null 2>&1; then
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-fi
-"$HOME/.cargo/bin/rustup" toolchain install stable --no-self-update 2>/dev/null || true
-
-# uv — Python toolchain manager
-brew_install uv
-
-# bun — JS/TS runtime and package manager
-if ! command -v bun >/dev/null 2>&1; then
-    curl -fsSL https://bun.sh/install | bash
+# ── devbox (per-project language environments via Nix) ───────────────────────
+# Languages and their LSPs are defined per project in devbox.json — not global.
+if ! command -v devbox >/dev/null 2>&1; then
+    curl -fsSL https://get.jetify.com/devbox | bash
 fi
 
 # ── C++ for competitive programming ───────────────────────────────────────────
@@ -289,33 +278,11 @@ if ! command -v hx >/dev/null 2>&1; then
     esac
 fi
 
-# ── Go ────────────────────────────────────────────────────────────────────────
-if ! command -v go >/dev/null 2>&1; then
-    case "$PM" in
-        pacman) pkg_install go ;;
-        *)
-            GO_VER=$(curl -fsSL "https://go.dev/VERSION?m=text" | head -1)
-            case "$ARCH" in
-                x86_64)  GO_ARCH="amd64" ;;
-                aarch64) GO_ARCH="arm64" ;;
-                *)        GO_ARCH="amd64" ;;
-            esac
-            curl -fsSL "https://go.dev/dl/${GO_VER}.linux-${GO_ARCH}.tar.gz" \
-                | $SUDO tar xz -C /usr/local
-            export PATH="/usr/local/go/bin:$PATH"
-            ;;
-    esac
+# ── devbox (per-project language environments via Nix) ───────────────────────
+# Languages and their LSPs are defined per project in devbox.json — not global.
+if ! command -v devbox >/dev/null 2>&1; then
+    curl -fsSL https://get.jetify.com/devbox | bash
 fi
-
-# ── Rust / Cargo ──────────────────────────────────────────────────────────────
-if ! command -v cargo >/dev/null 2>&1; then
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
-
-# ── uv (Python) / bun (JS) ────────────────────────────────────────────────────
-command -v uv  >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
-command -v bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash
 
 # ── ripgrep / fd / bat ────────────────────────────────────────────────────────
 command -v rg  >/dev/null 2>&1 || pkg_install ripgrep || echo "WARN: ripgrep skipped" >&2
@@ -485,8 +452,7 @@ command -v hyperfine >/dev/null 2>&1 || pkg_install hyperfine || echo "WARN: hyp
 
 if ! command -v tokei >/dev/null 2>&1; then
     pkg_install tokei 2>/dev/null \
-        || (command -v cargo >/dev/null 2>&1 && cargo install tokei) \
-        || echo "WARN: tokei skipped" >&2
+        || echo "WARN: tokei not in pkg repo, skipping (use devbox if needed)" >&2
 fi
 
 command -v jq >/dev/null 2>&1 || pkg_install jq || echo "WARN: jq skipped" >&2
