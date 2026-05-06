@@ -47,6 +47,7 @@ brew_install bat          # cat with syntax highlighting
 brew_install eza          # ls replacement
 brew_install zoxide       # smart cd
 brew_install fzf          # fuzzy finder
+brew_install yazi         # TUI file manager (Helix `<space>e` picker via helix-yazi)
 brew_install git-delta    # nicer git diff (binary: delta)
 brew_install gh           # GitHub CLI
 brew_install lazygit      # TUI git
@@ -312,6 +313,12 @@ fi
 # ── zoxide / fzf ──────────────────────────────────────────────────────────────
 command -v zoxide >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash -s -- --bin-dir "$BIN" || echo "WARN: zoxide install failed" >&2
 command -v fzf >/dev/null 2>&1 || pkg_install fzf || echo "WARN: fzf skipped" >&2
+
+# ── yazi (TUI file manager — Helix `<space>e` picker via helix-yazi) ─────────
+# Newer distros ship yazi natively. Older ones fall through to the Nix
+# fallback in the cross-platform section below (Nix is bootstrapped there).
+command -v yazi >/dev/null 2>&1 || pkg_install yazi 2>/dev/null \
+    || echo "INFO: yazi not in pkg repo; will retry via Nix after bootstrap" >&2
 
 # ── git-delta ─────────────────────────────────────────────────────────────────
 if ! command -v delta >/dev/null 2>&1; then
@@ -586,6 +593,12 @@ fi
 if ! command -v devbox >/dev/null 2>&1; then
     curl -fsSL https://get.jetify.com/devbox | bash -s -- -f \
         || echo "WARN: devbox install failed" >&2
+fi
+
+# ── yazi via Nix (fallback for distros without a pkg-manager yazi) ───────────
+if ! command -v yazi >/dev/null 2>&1 && command -v nix >/dev/null 2>&1; then
+    nix profile install nixpkgs#yazi 2>/dev/null \
+        || echo "WARN: yazi install via Nix failed" >&2
 fi
 
 echo "✓ Install script complete"

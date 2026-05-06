@@ -78,3 +78,9 @@ L = "goto_next_buffer"
 # Escキーを押したのと同じようにノーマルモードへ戻ります。
 # 手の配置を崩さずに済むため、長時間のコーディングでも疲労が激減します。
 j = { j = "normal_mode", k = "normal_mode" }
+
+# 4. Yazi ファイラ連携（Space + e で「Explorer」）
+# zellij のフローティングペインで yazi を起動し、選択したファイルを
+# Helix に `:open "<path>"` として送り返す。実装は `~/.local/bin/helix-yazi`。
+[keys.normal.space]
+e = ":sh helix-yazi"
