@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# helix-yazi: open Yazi in a floating Zellij pane and feed the selected file
+# back to the Helix instance that triggered it.
+#
+# Bound from Helix as `:sh helix-yazi` (see dot_config/helix/config.toml).
+# Requires: zellij, yazi.
+#
+# Flow:
+#   1. Helix runs `:sh helix-yazi`.
+#   2. Outer invocation tells zellij to open a *floating* pane that re-runs
+#      this same script with --inner. The outer call returns immediately so
+#      Helix is never blocked.
+#   3. Inside the pane, yazi runs in chooser mode; the picked path lands in
+#      a temp file.
+#   4. The inner script focuses the previous (Helix) pane and writes
+#      `:open "<path>"<Enter>` via `zellij action`.
+
+set -eu
+
+if [ -z "${ZELLIJ:-}" ]; then
+    echo "helix-yazi: not inside Zellij; this picker requires Zellij IPC." >&2
+    exit 1
+fi
+
+if [ "${1:-}" = "--inner" ]; then
+    CHOICE=$(mktemp -t yazi-helix.XXXXXX)
+    trap 'rm -f "$CHOICE"' EXIT
+
+    yazi --chooser-file="$CHOICE"
+
+    if [ -s "$CHOICE" ]; then
+        SELECTED=$(head -n 1 "$CHOICE")
+        # Bring focus back to whatever pane (Helix) opened the picker.
+        zellij action focus-previous-pane
+        # Quote the path so Helix's :open handles spaces correctly.
+        zellij action write-chars ":open \"$SELECTED\""
+        # Send Enter (CR).
+        zellij action write 13
+    fi
+    exit 0
+fi
+
+# Outer: spawn the floating pane and return immediately.
+exec zellij run --close-on-exit --floating --name yazi -- \
+    bash "$(readlink -f "$0")" --inner
