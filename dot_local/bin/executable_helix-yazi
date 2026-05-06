@@ -7,13 +7,15 @@
 #
 # Flow:
 #   1. Helix runs `:sh helix-yazi`.
-#   2. Outer invocation tells zellij to open a *floating* pane that re-runs
-#      this same script with --inner. The outer call returns immediately so
-#      Helix is never blocked.
+#   2. Outer invocation asks zellij to open a *floating* pane that re-runs
+#      this same script with --inner. Outer stdout/stderr is discarded so
+#      zellij's pane-creation chatter doesn't leak into Helix's status.
 #   3. Inside the pane, yazi runs in chooser mode; the picked path lands in
 #      a temp file.
-#   4. The inner script focuses the previous (Helix) pane and writes
-#      `:open "<path>"<Enter>` via `zellij action`.
+#   4. On yazi exit, `toggle-floating-panes` hides the floating pane (focus
+#      returns to the underlying tiled pane = Helix), then `:open '<path>'`
+#      is typed via `zellij action write-chars`. --close-on-exit cleans up
+#      the (now hidden) floating pane when this script exits.
 
 set -eu
 
@@ -30,16 +32,24 @@ if [ "${1:-}" = "--inner" ]; then
 
     if [ -s "$CHOICE" ]; then
         SELECTED=$(head -n 1 "$CHOICE")
-        # Bring focus back to whatever pane (Helix) opened the picker.
-        zellij action focus-previous-pane
-        # Quote the path so Helix's :open handles spaces correctly.
-        zellij action write-chars ":open \"$SELECTED\""
-        # Send Enter (CR).
+        # Hide the floating pane → focus moves to the tiled pane underneath
+        # (the Helix instance that triggered the picker). This is more
+        # reliable than `focus-previous-pane`, which means physical-prev,
+        # not "the pane I came from".
+        zellij action toggle-floating-panes
+        # Defensive ESC in case Helix is mid-command or in insert mode.
+        zellij action write 27
+        # Type :open '<path>' and press Enter. Single quotes survive paths
+        # with spaces; double quotes would need escaping that's a hassle in
+        # write-chars.
+        zellij action write-chars ":open '$SELECTED'"
         zellij action write 13
     fi
     exit 0
 fi
 
-# Outer: spawn the floating pane and return immediately.
+# Outer: spawn the floating pane and return immediately. Discard zellij's
+# stdout/stderr so the "creating pane …" noise doesn't end up in Helix's
+# `:sh` output area.
 exec zellij run --close-on-exit --floating --name yazi -- \
-    bash "$(readlink -f "$0")" --inner
+    bash "$(readlink -f "$0")" --inner >/dev/null 2>&1
