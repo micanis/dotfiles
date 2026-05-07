@@ -60,10 +60,12 @@ brew_install yq           # YAML processor
 brew_install direnv       # per-project env vars
 
 # ── LSP servers (binary distros) ──────────────────────────────────────────────
+# Java LSP (jdtls) and other language-coupled servers (gopls, rust-analyzer,
+# basedpyright, …) live per-project in devbox.json. clangd ships with llvm
+# below for ad-hoc C/C++ work alongside the gcc install.
 brew_install marksman     # Markdown LSP
 brew_install taplo        # TOML LSP / formatter
 brew_install llvm         # provides clangd + clang-format for C/C++
-brew_install jdtls        # Java LSP (Eclipse JDT-LS)
 
 # ── C++ for competitive programming ───────────────────────────────────────────
 # macOS ships clang/clang++ via Xcode CLT; install GCC for parity with online
@@ -538,31 +540,6 @@ fi
 # ═════════════════════════════════════════════════════════════════════════════
 # Cross-platform installs (run on both darwin and linux)
 # ═════════════════════════════════════════════════════════════════════════════
-
-# ── SDKMAN! + Java ────────────────────────────────────────────────────────────
-# SDKMAN bootstraps to ~/.sdkman; rcupdate=false keeps the installer from
-# patching login files (chezmoi-managed dot_zshrc / dot_bashrc source the init
-# script themselves). Then `sdk install java` selects SDKMAN's default JDK
-# (currently a recent Temurin LTS).
-export SDKMAN_DIR="$HOME/.sdkman"
-if [ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
-    curl -fsSL "https://get.sdkman.io?rcupdate=false" | bash
-fi
-
-if [ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
-    # sdkman-init.sh has bash-only patterns (it sources a bash completion
-    # file that calls the `complete` builtin), so we run this whole block
-    # in a fresh bash subshell. chezmoi may invoke the outer script under
-    # zsh on macOS — relying on the shebang would not be portable.
-    bash <<'BASH_EOF'
-. "$HOME/.sdkman/bin/sdkman-init.sh"
-if ! sdk current java 2>/dev/null | grep -q 'Using java'; then
-    sdk install java </dev/null || echo "WARN: sdk install java failed" >&2
-fi
-BASH_EOF
-else
-    echo "WARN: SDKMAN init script missing — Java install skipped" >&2
-fi
 
 # ── Nix (required by devbox) ──────────────────────────────────────────────────
 # Determinate Systems installer: faster than upstream, has uninstall, handles

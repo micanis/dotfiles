@@ -18,7 +18,8 @@ After that, `cd` into the project automatically activates the environment
 Languages live with the project that needs them — versions never clash and
 moving to a fresh machine only requires `devbox install`. The dotfiles only
 provision the host with `devbox`, `direnv`, and the editor / shell themselves.
-Java is the exception: it stays on SDKMAN (see `dot_zshrc` / `dot_bashrc`).
+Java is no exception: `jdk@21` + `jdt-language-server` are listed below
+alongside the other languages. SDKMAN is intentionally not provisioned.
 
 ## Helix LSP discovery
 
