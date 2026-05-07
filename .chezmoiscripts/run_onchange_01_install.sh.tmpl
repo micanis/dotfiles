@@ -550,13 +550,17 @@ if [ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
 fi
 
 if [ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
-    set +u   # sdkman-init.sh references unset vars
+    # sdkman-init.sh references unset vars (-u violation) and on non-bash
+    # interpreters it ends up sourcing a bash completion file whose
+    # `complete` builtin doesn't exist (-e violation). Both are harmless
+    # for our use of `sdk install java` so we relax the shell flags here.
+    set +eu
     # shellcheck disable=SC1091
     . "$SDKMAN_DIR/bin/sdkman-init.sh"
     if ! sdk current java 2>/dev/null | grep -q 'Using java'; then
         sdk install java </dev/null || echo "WARN: sdk install java failed" >&2
     fi
-    set -u
+    set -eu
 else
     echo "WARN: SDKMAN init script missing — Java install skipped" >&2
 fi

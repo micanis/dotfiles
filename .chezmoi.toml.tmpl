@@ -11,3 +11,9 @@
   osid = {{ $osid | quote }}
   is_display = {{ $has_display }}
   SUDO = {{ ternary "sudo" "" $has_sudo | quote }}
+
+# Force .sh scripts (.chezmoiscripts/run_*.sh.tmpl) through bash even when the
+# user's $SHELL is zsh. The scripts use bash-specific patterns (e.g. SDKMAN
+# init sources a bash completion file) and would fail under zsh otherwise.
+[interpreters."sh"]
+  command = "bash"
