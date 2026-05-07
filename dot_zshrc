@@ -14,10 +14,5 @@ command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
 # zoxide: smart cd (defines `z` and `zi`)
 command -v zoxide   >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 
-# direnv: per-directory env vars
+# direnv: per-directory env vars (devbox `use devbox` activates per project)
 command -v direnv   >/dev/null 2>&1 && eval "$(direnv hook zsh)"
-
-# ── SDKMAN! ───────────────────────────────────────────────────────────────────
-# Installed by run_onchange_01_install.sh; init script sets up `sdk` + JAVA_HOME.
-export SDKMAN_DIR="$HOME/.sdkman"
-[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"
