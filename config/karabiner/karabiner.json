@@ -1,0 +1,71 @@
+{
+  "global": {
+    "check_for_updates": false
+  },
+  "profiles": [
+    {
+      "name": "Default profile",
+      "selected": true,
+      "devices": [],
+      "simple_modifications": [
+        {
+          "from": { "key_code": "left_command" },
+          "to": [{ "key_code": "left_control" }]
+        },
+        {
+          "from": { "key_code": "left_control" },
+          "to": [{ "key_code": "left_command" }]
+        },
+        {
+          "from": { "key_code": "right_command" },
+          "to": [{ "key_code": "right_control" }]
+        },
+        {
+          "from": { "key_code": "right_control" },
+          "to": [{ "key_code": "right_command" }]
+        }
+      ],
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      },
+      "complex_modifications": {
+        "rules": [
+          {
+            "description": "Modifier keys and Japanese input switching",
+            "manipulators": [
+              {
+                "type": "basic",
+                "description": "Shift+Caps Lock toggles Caps Lock",
+                "from": {
+                  "key_code": "caps_lock",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "caps_lock",
+                    "hold_down_milliseconds": 200
+                  },
+                  { "key_code": "vk_none" }
+                ]
+              },
+              {
+                "type": "basic",
+                "description": "Caps Lock sends Control+Space",
+                "from": { "key_code": "caps_lock" },
+                "to": [
+                  {
+                    "key_code": "spacebar",
+                    "modifiers": ["left_control"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

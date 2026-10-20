@@ -1,0 +1,14 @@
+{
+  "vivaldi": {
+    "tabs": {
+      "defer_loading_after_restore": true
+    }
+  },
+  "account_values": {
+    "vivaldi": {
+      "tabs": {
+        "defer_loading_after_restore": true
+      }
+    }
+  }
+}

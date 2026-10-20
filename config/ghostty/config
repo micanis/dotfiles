@@ -1,0 +1,51 @@
+# Ghostty configuration
+# https://ghostty.org/docs/config
+
+# --- 見た目・フォント ---
+# フォントサイズ（お好みで調整してください）
+font-size = 14
+# 行間を少し広げてモダンにする
+adjust-cell-height = 10%
+# フォントファミリー 
+# font-family = "BlexMono Nerd Font Mono"
+
+# テーマ
+theme = Mariana
+
+# --- ウィンドウ・透明度 ---
+# 背景を透過させてブラー（すりガラス効果）を入れる
+background-opacity = 0.85
+background-blur-radius = 0
+
+# ウィンドウ内の余白を入れて圧迫感を減らす
+window-padding-x = 10
+window-padding-y = 10
+window-padding-balance = true
+
+# --- Macネイティブな挙動 ---
+# タイトルバーを透明にしてスッキリさせる
+macos-titlebar-style = transparent
+# フルスクリーン時にMac標準の挙動にする
+macos-window-shadow = true
+# 入力中はマウスカーソルを隠す
+mouse-hide-while-typing = true
+# Alt -> Option
+macos-option-as-alt = true
+
+# --- 操作性 ---
+# クリップボードの読み書きを許可
+clipboard-read = allow
+clipboard-write = allow
+
+# --- キーバインド設定 ---
+# デフォルトバインドを全消し
+keybind = clear
+
+# コピー/ペースト
+keybind = cmd+c=copy_to_clipboard
+keybind = cmd+v=paste_from_clipboard
+
+# フォントサイズ
+keybind = cmd+equal=increase_font_size:1
+keybind = cmd+minus=decrease_font_size:1
+keybind = cmd+zero=reset_font_size

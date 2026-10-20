@@ -1,0 +1,86 @@
+# Helix editor configuration
+# https://docs.helix-editor.com/configuration.html
+#
+# キー操作の基本（vim系）:
+#   i          → インサートモードに入る
+#   Esc        → ノーマルモードに戻る
+#   Space      → スペースメニュー（LSP, ファイル操作など）
+#   gd         → 定義へジャンプ（LSP）
+#   gr         → 参照一覧（LSP）
+#   K          → ホバー情報（LSP）
+#   Space + a  → コードアクション（LSP）
+#   Space + f  → ファイル検索
+#   Space + /  → プロジェクト内テキスト検索
+
+theme = "snowspire"
+
+[editor]
+line-number = "relative"   # 相対行番号（jk移動で何行かわかりやすい）
+cursorline = true          # カーソル行をハイライト
+color-modes = true         # モード別にカーソル色が変わる
+mouse = true
+auto-save = false
+rulers = []                # 80/120桁のガイドライン
+completion-trigger-len = 2 # この文字数から補完候補を表示
+
+[editor.cursor-shape]
+insert = "bar"       # インサートモード: 細い縦線
+normal = "block"     # ノーマルモード: ブロック
+select = "underline" # 選択モード: 下線
+
+[editor.file-picker]
+hidden = false # .始まりの隠しファイルも表示
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center = []
+right = [
+  "diagnostics",
+  "selections",
+  "position",
+  "file-encoding",
+  "file-line-ending",
+  "file-type",
+]
+separator = "│"
+
+[editor.indent-guides]
+render = false
+
+[editor.lsp]
+display-messages = true    # LSPメッセージをステータスラインに表示
+display-inlay-hints = true # 型推論などのインラインヒントを表示
+
+[editor.whitespace.render]
+tab = "all"    # タブ文字を可視化
+space = "none" # スペースは非表示（多すぎてうるさいため）
+
+[keys.normal]
+# カスタムキーバインドはここに追加
+# 例: "C-s" = ":w"  → Ctrl+s で保存
+
+# 1. クリップボードの完全同期
+# デフォルトではHelix内だけのコピーですが、これをOSのクリップボードと繋ぎます。
+# これでブラウザのコードを「p」で貼り付けたり、Helixのコードをブラウザに貼れます。
+y = "yank_main_selection_to_clipboard"
+p = "paste_clipboard_after"
+P = "paste_clipboard_before"
+
+# 2. ファイル（バッファ）の高速移動
+# 複数のファイルを開いているとき、Shift + h / Shift + l だけで
+# ブラウザのタブを切り替えるようにサクサク移動できるようになります。
+H = "goto_previous_buffer"
+L = "goto_next_buffer"
+
+[keys.insert]
+# 3. Escキーの最適化（重要）
+# インサートモード中に「j」と「k」または「j」を2回連続で素早く押すと、
+# Escキーを押したのと同じようにノーマルモードへ戻ります。
+# 手の配置を崩さずに済むため、長時間のコーディングでも疲労が激減します。
+j = { j = "normal_mode", k = "normal_mode" }
+
+# 4. Yazi ファイラ連携（Space + e で「Explorer」）
+# zellij のフローティングペインで yazi を起動し、選択したファイルを
+# Helix に `:open "<path>"` として送り返す。実装は `~/.local/bin/helix-yazi`。
+[keys.normal.space]
+e = ":sh helix-yazi"

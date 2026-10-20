@@ -1,0 +1,10 @@
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    AddKeysToAgent yes
+
+Host akagi-server
+    HostName 10.202.82.185
+    User yamanaka
+    LocalForward 8000 127.0.0.1:8000
+    ExitOnForwardFailure yes
