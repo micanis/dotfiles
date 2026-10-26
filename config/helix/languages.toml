@@ -26,6 +26,7 @@ args    = ["server"]
 # ─── JavaScript / TypeScript ──────────────────────────────────────────────────
 # typescript-language-server: 型情報・補完
 # biome: 高速 linter / formatter (rustで実装、eslint + prettier の代替)
+# tailwindcss-ls: Tailwind のクラス名補完（tsx / jsx / html / css）
 
 [[language]]
 name             = "typescript"
@@ -48,6 +49,7 @@ name             = "tsx"
 language-servers = [
   { name = "typescript-language-server", except-features = ["format", "inlay-hints"] },
   "biome",
+  "tailwindcss-ls",
 ]
 auto-format      = true
 
@@ -56,12 +58,28 @@ name             = "jsx"
 language-servers = [
   { name = "typescript-language-server", except-features = ["format", "inlay-hints"] },
   "biome",
+  "tailwindcss-ls",
 ]
 auto-format      = true
 
 [language-server.biome]
 command = "pnpm"
 args    = ["exec", "biome", "lsp-proxy"]
+
+[language-server.tailwindcss-ls]
+command = "tailwindcss-language-server"
+args    = ["--stdio"]
+
+# ─── HTML / CSS ───────────────────────────────────────────────────────────────
+# vscode-*-language-server: vscode-langservers-extracted に含まれる LSP
+
+[[language]]
+name             = "html"
+language-servers = ["vscode-html-language-server", "tailwindcss-ls"]
+
+[[language]]
+name             = "css"
+language-servers = ["vscode-css-language-server", "tailwindcss-ls"]
 
 # ─── Go ───────────────────────────────────────────────────────────────────────
 

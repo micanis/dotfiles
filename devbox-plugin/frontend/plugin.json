@@ -1,0 +1,16 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "description": "Node.js + pnpm + TypeScript/HTML/CSS/JSON/Tailwind language servers. Project tools (biome, typescript) come from node_modules first.",
+  "packages": {
+    "nodejs": "26",
+    "pnpm": "12",
+    "typescript": "latest",
+    "typescript-language-server": "latest",
+    "vscode-langservers-extracted": "latest",
+    "tailwindcss-language-server": "latest"
+  },
+  "env": {
+    "PATH": "{{ .DevboxProjectDir }}/node_modules/.bin:$PATH"
+  }
+}

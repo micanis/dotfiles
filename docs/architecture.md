@@ -22,7 +22,7 @@
 | ユーザー環境（CLI・シェル・dotfiles） | Home Manager | `modules/home/` |
 | macOS の GUI アプリ | Homebrew Cask / Mac App Store（nix-darwin 経由） | `modules/darwin/apps.nix` |
 | アプリの設定ファイル本体 | 元の形式のまま保存 | `config/` |
-| プロジェクトごとの開発環境 | 各プロジェクトの flake + devShell + nix-direnv | 各プロジェクト |
+| プロジェクトごとの開発環境 | devbox + direnv（言語ごとの plugin は `devbox-plugin/`） | 各プロジェクト |
 | 初回導入 | bootstrap スクリプト | `bootstrap/` |
 
 ## 構成の組み立て
@@ -121,7 +121,24 @@ Nix が入っていない状態から構成の適用までを担当し、それ�
 
 ## 開発環境
 
-言語ランタイムやプロジェクト固有のツールは Home Manager で管理しません。各プロジェクトに `flake.nix`（devShell）と `.envrc`（`use flake`）を置き、nix-direnv でディレクトリに入ったときに読み込みます。
+言語ランタイムやプロジェクト固有のツールは Home Manager で管理しません。各プロジェクトに devbox の `devbox.json` と `.envrc` を置き、direnv でディレクトリに入ったときに読み込みます。
+
+言語ごとの共通構成は `devbox-plugin/<言語>/plugin.json` にまとめ、プロジェクトの `devbox.json` から `include` します。
+
+| plugin | 内容 |
+|---|---|
+| `python` | Python・uv・ruff・basedpyright。devbox 組み込みの python plugin は無効にし、uv がプロジェクト直下の `.venv` を管理する。uv がダウンロードする Python は NixOS で動かないため `UV_PYTHON_DOWNLOADS=never` |
+| `go` | Go・gopls・gofumpt・golangci-lint・delve。`GOTOOLCHAIN=local` で go.mod の `toolchain` による自動ダウンロードを止める |
+| `frontend` | Node.js・pnpm・TypeScript / HTML / CSS / JSON / Tailwind の LSP。biome などはプロジェクトの `node_modules` のものを使う。pnpm 自体のバージョンは `package.json` の `packageManager` に従う |
+
+導入コマンドは Raycast の Script Command（`config/raycast/scripts/`、ルート検索で `devbox: <言語>`）でクリップボードにコピーして貼り付けます。Raycast の Settings → Extensions → Add Script Directory でこのディレクトリを 1 回だけ登録します（ファイル選択ダイアログでは ⌘⇧G でパスを入力）。
+
+```nu
+{packages: [], include: ["github:micanis/dotfiles?dir=devbox-plugin/go"]} | save -f devbox.json; devbox generate direnv
+```
+
+- plugin は GitHub の main から読み込む（`path:` だと devbox が `~` を展開しないため絶対パスになり、ホームディレクトリが違う macOS と Linux で共有できない）。plugin の変更は push してから反映される
+- plugin のバージョンは既定値。プロジェクトの `devbox.json` の `packages` に `go@1.26` のように書くとそちらが優先される
 
 ## 今後の課題
 

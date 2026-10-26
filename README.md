@@ -137,6 +137,7 @@ nix build .#homeConfigurations.linux-headless.activationPackage --dry-run
 │   ├── nixos/           NixOS のシステム設定
 │   └── home-manager.nix nix-darwin / NixOS に Home Manager を組み込む共通設定
 ├── config/              各アプリの設定ファイル本体（元の形式のまま）
+├── devbox-plugin/       プロジェクトの devbox.json から include する言語ごとの plugin
 └── docs/                設計と macOS 設定一覧
 ```
 

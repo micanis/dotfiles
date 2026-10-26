@@ -1,0 +1,16 @@
+{
+  "name": "go",
+  "version": "0.1.0",
+  "description": "Go + gopls/gofumpt/golangci-lint/delve. GOTOOLCHAIN=local keeps the Nix Go instead of downloading the toolchain named in go.mod.",
+  "packages": {
+    "go": "1.27",
+    "gopls": "latest",
+    "gofumpt": "latest",
+    "golangci-lint": "latest",
+    "delve": "latest"
+  },
+  "env": {
+    "GOTOOLCHAIN": "local",
+    "PATH": "$HOME/go/bin:$PATH"
+  }
+}

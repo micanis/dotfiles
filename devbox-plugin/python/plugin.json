@@ -1,0 +1,17 @@
+{
+  "name": "python",
+  "version": "0.1.0",
+  "description": "Python + uv. uv manages the project venv in ./.venv using the Nix Python (uv-downloaded Pythons do not run on NixOS).",
+  "packages": {
+    "python": { "version": "3.14", "disable_plugin": true },
+    "uv": "latest",
+    "ruff": "latest",
+    "basedpyright": "latest"
+  },
+  "env": {
+    "UV_PYTHON_DOWNLOADS": "never",
+    "UV_PYTHON_PREFERENCE": "only-system",
+    "VIRTUAL_ENV": "{{ .DevboxProjectDir }}/.venv",
+    "PATH": "{{ .DevboxProjectDir }}/.venv/bin:$PATH"
+  }
+}
