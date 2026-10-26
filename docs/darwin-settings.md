@@ -57,12 +57,7 @@ defaults read com.apple.controlcenter
 curl -fsSL https://raw.githubusercontent.com/micanis/dotfiles/main/bootstrap/install.sh | sh
 ```
 
-初回の適用で nix-darwin が `/etc/shells` を管理できない場合は、元のファイルを退避して再実行します。
-
-```sh
-sudo mv /etc/shells /etc/shells.before-nix-darwin
-./bootstrap/darwin.sh
-```
+初回だけ必要な作業（`/etc/shells` の衝突、Raycast の登録）は [README のクイックスタート](../README.md#クイックスタート) を参照してください。
 
 > Karabiner の設定は、Home Manager の適用のたびに書き込み可能なファイルとしてコピーされます。Karabiner がその場で設定を書き換えても動作し、次回の適用時には `config/karabiner/karabiner.json` の内容に戻ります（デバイスの有効・無効だけは各 Mac の値を保持します）。
 

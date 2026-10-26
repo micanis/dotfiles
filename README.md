@@ -6,12 +6,14 @@ macOS・Linux・NixOS の開発環境を、1 つの Nix flake で宣言的に管
 - **1 行で導入** — `curl | sh` で Nix の導入から構成の適用まで完了する
 - **設定ファイルはそのまま** — 各アプリの設定は元の形式で `config/` に置き、Home Manager でリンクする
 - **macOS も宣言的に** — `defaults`・Dock・Homebrew Cask・Mac App Store まで nix-darwin で管理する
+- **プロジェクトごとの開発環境** — 言語ランタイムは devbox + direnv。言語ごとの共通構成を plugin として配布する
 
 ## 目次
 
 - [クイックスタート](#クイックスタート)
 - [構成一覧](#構成一覧)
 - [日常の操作](#日常の操作)
+- [プロジェクトの開発環境](#プロジェクトの開発環境)
 - [よくある変更の置き場所](#よくある変更の置き場所)
 - [開発・検証](#開発検証)
 - [フォルダ構成](#フォルダ構成)
@@ -37,22 +39,30 @@ curl -fsSL https://raw.githubusercontent.com/micanis/dotfiles/main/bootstrap/ins
 | `DOTFILES_DIR` | `~/.local/share/dotfiles` | clone 先 |
 | `DOTFILES_REPO` | `https://github.com/micanis/dotfiles.git` | clone 元 |
 
-<details>
-<summary><b>macOS の初回だけ必要な作業</b> — <code>/etc/shells</code> の衝突</summary>
+導入が終わったらターミナルを開き直します。macOS ではログインシェルが Nushell に変わり、[日常の操作](#日常の操作) の関数が使えるようになります（Linux では `nu` を起動して使います）。
 
-nix-darwin が `/etc/shells` を管理するため、初回の適用で既存ファイルと衝突した場合は退避してから再実行します。
+<details>
+<summary><b>macOS の初回だけ必要な作業</b> — <code>/etc/shells</code> の衝突、Raycast の登録</summary>
+
+**`/etc/shells` の衝突**: nix-darwin が `/etc/shells` を管理するため、初回の適用で既存ファイルと衝突した場合は退避してから再実行します。
 
 ```sh
 sudo mv /etc/shells /etc/shells.before-nix-darwin
-./bootstrap/darwin.sh
+cd ~/.local/share/dotfiles && ./bootstrap/darwin.sh
 ```
+
+**Raycast の Script Command**: Raycast の Settings → Extensions → `+` → Add Script Directory で `~/.local/share/dotfiles/config/raycast/scripts` を登録します。ファイル選択ダイアログでは隠しフォルダが見えないので、⌘⇧G でパスを入力します。
 
 </details>
 
 <details>
 <summary><b>NixOS の初回だけ必要な作業</b> — ハードウェア設定の追加</summary>
 
-`nixosConfigurations.nixos` はブートローダーやファイルシステムの設定を含んでいないため、このままでは評価に失敗します。実機で生成した `hardware-configuration.nix` を `hosts/nixos/` に追加し、import してください。
+NixOS では `install.sh` を使いません（Linux と判定して standalone の Home Manager を適用してしまうため）。
+
+1. リポジトリを `~/.local/share/dotfiles` に clone する
+2. `nixosConfigurations.nixos` はブートローダーやファイルシステムの設定を含んでいないため、実機で生成した `hardware-configuration.nix` を `hosts/nixos/` に追加して import する
+3. `sudo nixos-rebuild switch --flake .#nixos` を実行する（2 回目以降は `nix-apply`）
 
 </details>
 
@@ -65,45 +75,52 @@ sudo mv /etc/shells /etc/shells.before-nix-darwin
 | `homeConfigurations.linux-headless` | NixOS 以外の Linux サーバー | Home Manager (standalone) |
 | `nixosConfigurations.nixos` | NixOS | NixOS modules + Home Manager |
 
-主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf など。macOS では加えて Ghostty・Karabiner-Elements・Claude Code・Codex を入れます。
+主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Claude Code・Codex を入れます。
 
 ## 日常の操作
 
-設定を変更したら、リポジトリのルートで次を実行して反映します。
+設定を変更したら、Nushell で次の関数を実行して反映します。どのディレクトリからでも実行できます。
 
-| 対象 | コマンド |
+| 関数 | やること |
 |---|---|
-| macOS | `sudo darwin-rebuild switch --flake .#darwin` |
+| `nix-apply` | 設定を反映する。OS を判定し、macOS は `bootstrap/darwin.sh`、NixOS は `nixos-rebuild switch`、それ以外の Linux は `bootstrap/linux.sh` を実行 |
+| `nix-update` | すべての input を最新にしてから `nix-apply` |
+| `nix-clean` | 古い世代と、使われていない Nix store を削除 |
+
+- **未追跡のファイル**: Nix flake は Git に登録されていないファイルを無視します。`nix-apply` は未追跡のファイルがあると `git add` するか聞きます
+- **Linux（NixOS 以外）**: Home Manager のプロファイルを引数で渡します。省略すると `linux-headless` になるため、**GUI のマシンでは毎回 `nix-apply linux-gui` / `nix-update linux-gui` と指定してください**（忘れると Ghostty などの GUI 向け設定が外れます）
+- **GitHub の利用制限**: `nix-update` は `gh auth token` のトークンを Nix に渡して、GitHub API の利用回数制限（認証なしだと 1 時間 60 回）を避けます。トークンはファイルに保存しません
+- **Mac App Store のアプリ**: `masApps` に追加したアプリも `nix-apply` で入ります（途中でパスワードを聞かれます。理由は [docs/architecture.md の bootstrap](docs/architecture.md#bootstrap)）。アプリ ID は `nix run nixpkgs#mas -- search <名前>` で調べられます
+
+<details>
+<summary><b>関数を使わずに実行する</b> — リポジトリのルートで実行するコマンド</summary>
+
+| 対象 | 反映 |
+|---|---|
+| macOS | `./bootstrap/darwin.sh`（App Store のアプリを追加していなければ `sudo darwin-rebuild switch --flake .#darwin` でも可） |
 | Linux | `home-manager switch --flake .#linux-gui`（または `.#linux-headless`） |
 | NixOS | `sudo nixos-rebuild switch --flake .#nixos` |
-
-> **注意:** Nix flake は Git に登録されていないファイルを無視します。新しいファイルを追加したら、適用前に `git add` してください。
-
-Nushell では次の関数でも実行できます（どのディレクトリからでも可）。
-
-| 関数 | 内容 |
-|---|---|
-| `nix-apply [profile]` | OS を判定して適用。macOS は `bootstrap/darwin.sh`、Linux は `bootstrap/linux.sh <profile>`（既定 `linux-headless`）。未追跡のファイルがあれば `git add` するか聞く |
-| `nix-update [profile]` | `nix flake update` してから `nix-apply` |
-| `nix-clean` | 古い世代と使われていない Nix store を削除 |
-
-### 依存の更新
 
 ```sh
 nix flake update            # すべての input を更新
 nix flake update nixpkgs    # 特定の input だけ更新
 ```
 
-<details>
-<summary><b>Mac App Store のアプリを追加したとき</b> — <code>darwin-rebuild</code> ではなく <code>bootstrap/darwin.sh</code> で適用</summary>
-
-`modules/darwin/apps.nix` の `masApps` にアプリを追加したら、`./bootstrap/darwin.sh` で適用します。
-
-macOS 26.1 以降、App Store アプリのインストールには管理者権限が必要です。`darwin-rebuild` は途中でパスワードを聞けないため、未インストールのアプリがあると適用が失敗します。`bootstrap/darwin.sh` は先に `mas install` でアプリを入れて（ここでパスワードを聞きます）から `darwin-rebuild switch` を実行します。
-
-アプリ ID は `mas search <名前>` で調べられます。
-
 </details>
+
+## プロジェクトの開発環境
+
+言語ランタイムや LSP はプロジェクトごとに devbox で用意し、direnv でディレクトリに入ったときに読み込みます。
+
+プロジェクトのディレクトリで、Nushell で次を実行します（`go` の部分は `python`・`go`・`frontend` のどれか）。`devbox.json` と `.envrc` ができ、`direnv allow` まで済みます。
+
+```nu
+{packages: [], include: ["github:micanis/dotfiles?dir=devbox-plugin/go"]} | save -f devbox.json; devbox generate direnv
+```
+
+macOS では Raycast で `devbox: <言語>` を実行すると、このコマンドがクリップボードにコピーされます（Script Command の登録が必要。[macOS の初回だけ必要な作業](#クイックスタート) を参照）。
+
+plugin の中身と運用ルールは [docs/architecture.md の開発環境](docs/architecture.md#開発環境) を参照してください。
 
 ## よくある変更の置き場所
 
@@ -115,6 +132,9 @@ macOS 26.1 以降、App Store アプリのインストールには管理者権�
 | シェルのエイリアス・関数を追加 | `config/nushell/scripts/aliases.nu`・`functions.nu` |
 | エディタやターミナルの設定 | `config/<アプリ名>/` |
 | キー配列（Karabiner）を変更 | `config/karabiner/karabiner.json` |
+| エディタの LSP・フォーマッターを設定 | `config/helix/languages.toml`（LSP 本体の入れ方は [開発環境の運用ルール](docs/architecture.md#運用ルール)） |
+| 言語ごとの開発環境を変更 | `devbox-plugin/<言語>/plugin.json`（push してから反映される） |
+| Raycast のコマンドを追加 | `config/raycast/scripts/` |
 
 ## 開発・検証
 
@@ -139,7 +159,7 @@ nix build .#homeConfigurations.linux-headless.activationPackage --dry-run
 ├── modules/
 │   ├── home/            Home Manager（ユーザー環境）
 │   │   ├── common/        全環境共通: CLI ツール、シェル、Git、SSH、エディタ
-│   │   ├── darwin/        macOS 専用: Karabiner、Vivaldi、既定アプリ、AI エージェント
+│   │   ├── darwin/        macOS 専用: Ghostty の設定、Karabiner、Vivaldi、既定アプリ、AI エージェント
 │   │   └── linux/         Linux 専用（gui.nix はデスクトップ向けの追加分）
 │   ├── darwin/          nix-darwin（システム設定・defaults・Homebrew）
 │   ├── nixos/           NixOS のシステム設定
@@ -153,7 +173,7 @@ nix build .#homeConfigurations.linux-headless.activationPackage --dry-run
 
 | ドキュメント | 内容 |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | 設計方針、責務の分担、構成の組み立て方、各ディレクトリのルール |
+| [docs/architecture.md](docs/architecture.md) | 設計方針、責務の分担、構成の組み立て方、各ディレクトリのルール、開発環境（devbox plugin） |
 | [docs/darwin-settings.md](docs/darwin-settings.md) | nix-darwin / Home Manager で管理している macOS 設定の一覧（移行用チェックリスト） |
 
 ## バージョン

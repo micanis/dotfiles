@@ -110,8 +110,8 @@ Nix が入っていない状態から構成の適用までを担当し、それ�
 
 | スクリプト | 役割 |
 |---|---|
-| `install.sh` | OS を判定し、Nix を導入、リポジトリを clone（git は `nix-shell` で用意） |
-| `darwin.sh` | Homebrew を導入し、`masApps` の App Store アプリを `mas install` で入れてから、nix-darwin をビルドして `darwin-rebuild switch`。何度実行しても安全 |
+| `install.sh` | Nix を導入し、リポジトリを clone（既にあれば pull。git は `nix-shell` で用意）してから、OS に応じて `darwin.sh` / `linux.sh` を実行。NixOS には対応していない |
+| `darwin.sh` | Homebrew を導入し、nix-darwin をビルドしてから `masApps` の App Store アプリを `mas install` で入れ、`darwin-rebuild switch`。何度実行しても安全。Nushell の `nix-apply` もこれを呼ぶ |
 | `linux.sh` | Home Manager の activation package をビルドして実行 |
 | `lib.sh` | `darwin.sh` と `linux.sh` の共通関数 |
 
@@ -125,20 +125,47 @@ Nix が入っていない状態から構成の適用までを担当し、それ�
 
 言語ごとの共通構成は `devbox-plugin/<言語>/plugin.json` にまとめ、プロジェクトの `devbox.json` から `include` します。
 
-| plugin | 内容 |
-|---|---|
-| `python` | Python・uv・ruff・basedpyright。devbox 組み込みの python plugin は無効にし、uv がプロジェクト直下の `.venv` を管理する。uv がダウンロードする Python は NixOS で動かないため `UV_PYTHON_DOWNLOADS=never` |
-| `go` | Go・gopls・gofumpt・golangci-lint・delve。`GOTOOLCHAIN=local` で go.mod の `toolchain` による自動ダウンロードを止める |
-| `frontend` | Node.js・pnpm・TypeScript / HTML / CSS / JSON / Tailwind の LSP。biome などはプロジェクトの `node_modules` のものを使う。pnpm 自体のバージョンは `package.json` の `packageManager` に従う |
-
-導入コマンドは Raycast の Script Command（`config/raycast/scripts/`、ルート検索で `devbox: <言語>`）でクリップボードにコピーして貼り付けます。Raycast の Settings → Extensions → Add Script Directory でこのディレクトリを 1 回だけ登録します（ファイル選択ダイアログでは ⌘⇧G でパスを入力）。
-
-```nu
-{packages: [], include: ["github:micanis/dotfiles?dir=devbox-plugin/go"]} | save -f devbox.json; devbox generate direnv
+```json
+{
+  "packages": [],
+  "include": ["github:micanis/dotfiles?dir=devbox-plugin/go"]
+}
 ```
 
-- plugin は GitHub の main から読み込む（`path:` だと devbox が `~` を展開しないため絶対パスになり、ホームディレクトリが違う macOS と Linux で共有できない）。plugin の変更は push してから反映される
-- plugin のバージョンは既定値。プロジェクトの `devbox.json` の `packages` に `go@1.26` のように書くとそちらが優先される
+### plugin 一覧
+
+| plugin | 入るもの | 設定 |
+|---|---|---|
+| `python` | Python 3.14・uv・ruff・basedpyright | `UV_PYTHON_DOWNLOADS=never`・`UV_PYTHON_PREFERENCE=only-system`、`VIRTUAL_ENV` と PATH に `.venv` |
+| `go` | Go 1.27・gopls・gofumpt・golangci-lint・delve | `GOTOOLCHAIN=local`、`~/go/bin` を PATH に追加 |
+| `frontend` | Node.js 26・pnpm 12・TypeScript・typescript-language-server・HTML / CSS / JSON / Tailwind の LSP | `node_modules/.bin` を PATH に追加 |
+
+**python**
+
+- devbox 組み込みの python plugin（`.devbox/virtenv` に venv を作る）は無効にし、uv がプロジェクト直下の `.venv` を管理する。`.venv/bin` は PATH に入るので activate は不要
+- uv がダウンロードする Python は NixOS で動かない（動的リンクのため）ので、`UV_PYTHON_DOWNLOADS=never`・`UV_PYTHON_PREFERENCE=only-system` で Nix の Python だけを使わせる
+
+**go**
+
+- `GOTOOLCHAIN=local` で、go.mod の `toolchain` 行による Go の自動ダウンロードを止め、Nix の Go に固定する
+
+**frontend**
+
+- biome はプロジェクトの devDependency を使う（Helix は `pnpm exec biome lsp-proxy` で起動する）。`biome.json` のスキーマとバージョンを揃えるため
+- pnpm 自体のバージョンは `package.json` の `packageManager` に従う。pnpm の既定の動作（`manage-package-manager-versions`）に任せていて、こちらでは設定していない。corepack は Node 25 以降同梱されないため使わない
+
+### 導入の手順
+
+[README のプロジェクトの開発環境](../README.md#プロジェクトの開発環境) を参照。macOS では Raycast の Script Command（`config/raycast/scripts/`）が導入コマンドをクリップボードにコピーする。
+
+### 運用ルール
+
+| ルール | 理由 |
+|---|---|
+| plugin は `path:` ではなく GitHub（main）から読み込む | devbox は `path:` の `~` を展開しないため絶対パスになり、ホームディレクトリが違う macOS（`/Users`）と Linux（`/home`）で `devbox.json` を共有できない |
+| plugin を変更したら push する | プロジェクトは GitHub の main を読むため、push するまで反映されない |
+| 言語のバージョンを変えたいときは、プロジェクトの `devbox.json` の `packages` に書く | `go@1.26` のように書くと plugin の既定値より優先される |
+| LSP の設定は `config/helix/languages.toml`。言語ごとの LSP 本体は plugin に入れ、plugin が無い言語（Rust・C++ など）はプロジェクトの `devbox.json` に直接書く。言語に依存しない LSP（marksman・taplo）だけ `packages.nix` で全環境に入れる | Helix の設定は全環境共通、ツールのバージョンはプロジェクトごとに分けるため |
 
 ## 今後の課題
 
