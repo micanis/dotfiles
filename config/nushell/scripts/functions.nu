@@ -72,8 +72,17 @@ def nix-apply [profile?: string] {
 # Update all flake inputs, then apply.
 def nix-update [profile?: string] {
     cd ~/.local/share/dotfiles
-    nix flake update
+    with-env (github-nix-config) { nix flake update }
     nix-apply $profile
+}
+
+# Pass the gh token to Nix so GitHub API calls are not rate limited as
+# anonymous requests (60/hour per IP). The token is never written to disk.
+def github-nix-config [] {
+    let token = (do { gh auth token } | complete)
+    if $token.exit_code != 0 { return {} }
+    let tokens = $"access-tokens = github.com=($token.stdout | str trim)"
+    { NIX_CONFIG: ([$env.NIX_CONFIG? $tokens] | compact | str join "\n") }
 }
 
 # Delete old generations and unused store paths.
