@@ -23,6 +23,7 @@
     # apply with bootstrap/darwin.sh, which installs these first.
     masApps = {
       "RunCat Neo" = 6757801838;
+      Xcode = 497799835;
     };
   };
 }
