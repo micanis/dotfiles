@@ -79,6 +79,14 @@ sudo mv /etc/shells /etc/shells.before-nix-darwin
 
 > **注意:** Nix flake は Git に登録されていないファイルを無視します。新しいファイルを追加したら、適用前に `git add` してください。
 
+Nushell では次の関数でも実行できます（どのディレクトリからでも可）。
+
+| 関数 | 内容 |
+|---|---|
+| `nix-apply [profile]` | OS を判定して適用。macOS は `bootstrap/darwin.sh`、Linux は `bootstrap/linux.sh <profile>`（既定 `linux-headless`）。未追跡のファイルがあれば `git add` するか聞く |
+| `nix-update [profile]` | `nix flake update` してから `nix-apply` |
+| `nix-clean` | 古い世代と使われていない Nix store を削除 |
+
 ### 依存の更新
 
 ```sh

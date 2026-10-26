@@ -44,3 +44,40 @@ def fe [] {
     let target = (fd --type f --hidden --exclude .git | fzf --preview 'bat --color=always --style=numbers --line-range :200 {}')
     if ($target | is-not-empty) { hx $target }
 }
+
+# ─── dotfiles (Nix) ──────────────────────────────────────────────────────────
+
+# Apply the dotfiles for this machine. Linux (non-NixOS) takes the Home Manager
+# profile: linux-gui or linux-headless (default, same as bootstrap/linux.sh).
+def nix-apply [profile?: string] {
+    cd ~/.local/share/dotfiles
+
+    # Flakes ignore files Git does not know about.
+    let untracked = (git ls-files --others --exclude-standard | lines)
+    if ($untracked | is-not-empty) {
+        print "Untracked files (ignored by the flake):"
+        $untracked | each { |f| print $"  ($f)" }
+        if (input "git add them? [y/N] ") in ["y" "Y"] { git add ...$untracked }
+    }
+
+    if $nu.os-info.name == "macos" {
+        ./bootstrap/darwin.sh
+    } else if ("/etc/NIXOS" | path exists) {
+        sudo nixos-rebuild switch --flake .#nixos
+    } else {
+        ./bootstrap/linux.sh ($profile | default "linux-headless")
+    }
+}
+
+# Update all flake inputs, then apply.
+def nix-update [profile?: string] {
+    cd ~/.local/share/dotfiles
+    nix flake update
+    nix-apply $profile
+}
+
+# Delete old generations and unused store paths.
+def nix-clean [] {
+    nix-collect-garbage -d
+    sudo nix-collect-garbage -d
+}
