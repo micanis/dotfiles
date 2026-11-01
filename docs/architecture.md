@@ -139,6 +139,7 @@ Nix が入っていない状態から構成の適用までを担当し、それ�
 | `python` | Python 3.14・uv・ruff・basedpyright | `UV_PYTHON_DOWNLOADS=never`・`UV_PYTHON_PREFERENCE=only-system`、`VIRTUAL_ENV` と PATH に `.venv` |
 | `go` | Go 1.27・gopls・gofumpt・golangci-lint・delve | `GOTOOLCHAIN=local`、`~/go/bin` を PATH に追加 |
 | `frontend` | Node.js 26・pnpm 12・TypeScript・typescript-language-server・HTML / CSS / JSON / Tailwind の LSP | `node_modules/.bin` を PATH に追加 |
+| `typst` | Typst・Tinymist・Noto CJK Serif / Sans | `TYPST_FONT_PATHS` にプロジェクトの Nix profile 内の `share/fonts` を指定 |
 
 **python**
 
@@ -153,6 +154,24 @@ Nix が入っていない状態から構成の適用までを担当し、それ�
 
 - biome はプロジェクトの devDependency を使う（Helix は `pnpm exec biome lsp-proxy` で起動する）。`biome.json` のスキーマとバージョンを揃えるため
 - pnpm 自体のバージョンは `package.json` の `packageManager` に従う。pnpm の既定の動作（`manage-package-manager-versions`）に任せていて、こちらでは設定していない。corepack は Node 25 以降同梱されないため使わない
+
+**typst**
+
+- plugin はコンパイラ・LSP・フォントを提供する。二段組、段落、余白、文字サイズ、フォントの使い分け、参考文献の書式は文書プロジェクト側の `.typ` やテンプレートで設定する
+- `TYPST_FONT_PATHS` は Typst CLI と Tinymist の両方が参照する。OS にフォントをインストールせず、devbox が用意するフォントを使える。追加の参照先が必要な場合は、プロジェクトの `devbox.json` の `env` で上書きする（既定の `share/fonts` も含める）
+- 日本語本文用に `Noto Serif CJK JP`（明朝）、見出し用に `Noto Sans CJK JP`（ゴシック）を選べる。人工知能学会全国大会の[執筆要領](https://conf.ai-gakkai.or.jp/jsai2026/author-guideline/)の書体区分に合わせた選択であり、学会がこのフォント製品を指定しているわけではない
+- Helix は Tinymist の typstyle で保存時に整形する。devbox / direnv の環境内から `hx` を起動する
+- `typst fonts` でフォントを確認し、`typst compile main.typ` で PDF を生成する。編集しながら生成するときは別のターミナルで `typst watch main.typ` を実行する。Tinymist による自動 PDF 出力は無効にしている
+
+プロジェクト側でフォントを選ぶ最小例（投稿用のレイアウトは別途設定する）:
+
+```typst
+#set text(font: ("Libertinus Serif", "Noto Serif CJK JP"), lang: "ja")
+#show heading: set text(font: ("Noto Sans CJK JP",))
+
+= 日本語の見出し
+日本語の本文と数式 $E = m c^2$。
+```
 
 ### 導入の手順
 

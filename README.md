@@ -112,7 +112,7 @@ nix flake update nixpkgs    # 特定の input だけ更新
 
 言語ランタイムや LSP はプロジェクトごとに devbox で用意し、direnv でディレクトリに入ったときに読み込みます。
 
-プロジェクトのディレクトリで、Nushell で次を実行します（`go` の部分は `python`・`go`・`frontend` のどれか）。`devbox.json` と `.envrc` ができ、`direnv allow` まで済みます。
+プロジェクトのディレクトリで、Nushell で次を実行します（`go` の部分は `python`・`go`・`frontend`・`typst` のどれか）。`devbox.json` と `.envrc` ができ、`direnv allow` まで済みます。
 
 ```nu
 {packages: [], include: ["github:micanis/dotfiles?dir=devbox-plugin/go"]} | save -f devbox.json; devbox generate direnv

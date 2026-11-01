@@ -1,0 +1,14 @@
+{
+  "name": "typst",
+  "version": "0.1.0",
+  "description": "Typst + tinymist + Noto CJK serif/sans fonts. Document layout and font selection belong in the project.",
+  "packages": {
+    "typst": "latest",
+    "tinymist": "latest",
+    "noto-fonts-cjk-serif": "latest",
+    "noto-fonts-cjk-sans": "latest"
+  },
+  "env": {
+    "TYPST_FONT_PATHS": "{{ .DevboxProjectDir }}/.devbox/nix/profile/default/share/fonts"
+  }
+}

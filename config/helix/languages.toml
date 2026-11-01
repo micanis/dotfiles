@@ -107,6 +107,21 @@ check = { command = "clippy", features = "all" }
 [language-server.rust-analyzer.config.cargo]
 allFeatures = true
 
+# ─── Typst ────────────────────────────────────────────────────────────────────
+# The project plugin supplies tinymist and TYPST_FONT_PATHS for Japanese fonts.
+
+[[language]]
+name             = "typst"
+language-servers = ["tinymist"]
+auto-format      = true
+
+[language-server.tinymist]
+command = "tinymist"
+
+[language-server.tinymist.config]
+formatterMode = "typstyle"
+exportPdf = "never" # Generate PDFs explicitly with typst compile / watch.
+
 # ─── Markdown ─────────────────────────────────────────────────────────────────
 
 [[language]]
