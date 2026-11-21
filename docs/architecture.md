@@ -56,6 +56,8 @@ flake.nix
 
 `home.username`・`home.homeDirectory`・`home.stateVersion` はこれらを使って `modules/home/common/default.nix` で一括設定しているため、ホスト側で書く必要はありません。
 
+standalone Linux のみ、`--impure` 評価時は `USER`・`HOME` でユーザー名とホームディレクトリを上書きします。`bootstrap/linux.sh` は `id -un` で `USER` を設定し、`nix build --impure` で適用します。pure 評価時は上記の既定値を使います。
+
 ## 各ディレクトリのルール
 
 | ディレクトリ | 書くもの | 書かないもの |
@@ -71,7 +73,7 @@ flake.nix
 | サブディレクトリ | 内容 |
 |---|---|
 | `common/` | 全環境共通。CLI ツール（`packages.nix`）、シェル、Git・gh、SSH、Starship、Helix、Nushell、direnv、Zellij |
-| `darwin/` | macOS 専用。Ghostty の設定、Claude Code / Codex、PDF の既定アプリ（`default-apps.nix`）、Karabiner（`karabiner.nix`）、Vivaldi（`vivaldi.nix`） |
+| `darwin/` | macOS 専用。Ghostty の設定、Claude Code / Codex / Antigravity CLI（`agy`）、PDF の既定アプリ（`default-apps.nix`）、Karabiner（`karabiner.nix`）、Vivaldi（`vivaldi.nix`） |
 | `linux/` | Linux 共通（standalone 用の `home-manager` コマンド）。`gui.nix` はデスクトップ環境向けの追加分（Ghostty 本体と設定） |
 
 </details>

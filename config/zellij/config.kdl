@@ -16,8 +16,11 @@ show_startup_tips false
 // Use Nushell for new panes, regardless of the parent terminal's shell
 default_shell "nu"
 
-// Disable session serialization/resurrection
-session_serialization false
+// Eable session serialization/resurrection
+session_serialization true
+pane_viewport_serialization true
+scrollback_lines_to_serialize 10000
+serialization_interval 5
 
 themes {
     nord {

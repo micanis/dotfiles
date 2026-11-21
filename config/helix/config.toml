@@ -23,6 +23,9 @@ auto-save = false
 rulers = []                # 80/120桁のガイドライン
 completion-trigger-len = 2 # この文字数から補完候補を表示
 
+[editor.soft-wrap]
+enable = true # ウィンドウの幅に合わせて長い行を折り返す
+
 [editor.cursor-shape]
 insert = "bar"       # インサートモード: 細い縦線
 normal = "block"     # ノーマルモード: ブロック

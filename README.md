@@ -41,6 +41,8 @@ curl -fsSL https://raw.githubusercontent.com/micanis/dotfiles/main/bootstrap/ins
 
 導入が終わったらターミナルを開き直します。macOS ではログインシェルが Nushell に変わり、[日常の操作](#日常の操作) の関数が使えるようになります（Linux では `nu` を起動して使います）。
 
+Linux の standalone 構成は、実行ユーザーと `$HOME` に合わせて適用されます。`sudo` は付けず、利用するアカウントで実行してください。
+
 <details>
 <summary><b>macOS の初回だけ必要な作業</b> — <code>/etc/shells</code> の衝突、Raycast の登録</summary>
 
@@ -75,7 +77,7 @@ NixOS では `install.sh` を使いません（Linux と判定して standalone 
 | `homeConfigurations.linux-headless` | NixOS 以外の Linux サーバー | Home Manager (standalone) |
 | `nixosConfigurations.nixos` | NixOS | NixOS modules + Home Manager |
 
-主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Claude Code・Codex を入れます。
+主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Claude Code・Codex・Antigravity CLI（`agy`）を入れます。
 
 ## 日常の操作
 
@@ -98,7 +100,7 @@ NixOS では `install.sh` を使いません（Linux と判定して standalone 
 | 対象 | 反映 |
 |---|---|
 | macOS | `./bootstrap/darwin.sh`（App Store のアプリを追加していなければ `sudo darwin-rebuild switch --flake .#darwin` でも可） |
-| Linux | `home-manager switch --flake .#linux-gui`（または `.#linux-headless`） |
+| Linux | `./bootstrap/linux.sh linux-gui`（または `linux-headless`）。直接実行する場合は `home-manager switch --impure --flake .#linux-gui` |
 | NixOS | `sudo nixos-rebuild switch --flake .#nixos` |
 
 ```sh

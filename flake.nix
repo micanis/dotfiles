@@ -14,7 +14,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # AI coding agents (Claude Code, Codex) packaged outside nixpkgs.
+    # AI coding agents (Claude Code, Codex, Antigravity CLI) packaged outside nixpkgs.
     llm-agents.url = "git+https://github.com/numtide/llm-agents.nix.git?shallow=1";
   };
 
@@ -42,6 +42,15 @@
       darwinArgs = argsFor "/Users/${username}";
       linuxArgs = argsFor "/home/${username}";
 
+      # Standalone Linux follows the invoking user when evaluated with --impure.
+      # Keep the fixed identity above for nix-darwin and NixOS.
+      standaloneUsername = builtins.getEnv "USER";
+      standaloneHome = builtins.getEnv "HOME";
+      standaloneLinuxArgs = linuxArgs // {
+        username = if standaloneUsername != "" then standaloneUsername else username;
+        homeDirectory = if standaloneHome != "" then standaloneHome else linuxArgs.homeDirectory;
+      };
+
       pkgsFor =
         system:
         import nixpkgs {
@@ -54,7 +63,7 @@
         hostModule:
         home-manager.lib.homeManagerConfiguration {
           pkgs = pkgsFor "x86_64-linux";
-          extraSpecialArgs = linuxArgs;
+          extraSpecialArgs = standaloneLinuxArgs;
           modules = [ hostModule ];
         };
 

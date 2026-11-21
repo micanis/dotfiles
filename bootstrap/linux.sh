@@ -16,5 +16,8 @@ esac
 ensure_nix
 cd_repo_root
 
-run_nix build ".#homeConfigurations.${profile}.activationPackage"
+# Home Manager must target the actual account, even when USER is stale or unset.
+USER=$(id -un)
+export USER
+run_nix build --impure ".#homeConfigurations.${profile}.activationPackage"
 ./result/activate

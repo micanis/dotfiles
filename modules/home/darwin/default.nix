@@ -7,12 +7,15 @@ in
   imports = [
     ./default-apps.nix
     ./karabiner.nix
+    ./runcat.nix
     ./vivaldi.nix
   ];
 
   home.packages = [
+    pkgs.ffmpeg
     llmAgents.claude-code
     llmAgents.codex
+    llmAgents.antigravity-cli
   ];
 
   # Ghostty itself is installed as a Homebrew cask (modules/darwin/apps.nix).

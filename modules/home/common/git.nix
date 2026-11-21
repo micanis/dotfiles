@@ -7,6 +7,9 @@
         init.defaultBranch = "main";
         pull.rebase = true;
         push.autoSetupRemote = true;
+        http."https://git.crane.home.arpa/" = {
+          sslCAInfo = "/Users/micanis/.config/git/certs/crane-root.crt";
+        };
       };
     };
 
