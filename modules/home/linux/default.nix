@@ -5,7 +5,7 @@ let
 in
 {
   home.packages = [
-    llmAgents.codex
+    (pkgs.callPackage ../../../packages/codex-binary { })
     llmAgents.claude-code
   ];
 

@@ -89,12 +89,13 @@ Zellij の操作キーは macOS では Alt、Linux では Ctrl です。Linux �
 | 関数 | やること |
 |---|---|
 | `nix-apply` | 設定を反映する。OS を判定し、macOS は `bootstrap/darwin.sh`、NixOS は `nixos-rebuild switch`、それ以外の Linux は `bootstrap/linux.sh` を実行 |
-| `nix-update` | すべての input を最新にしてから `nix-apply` |
+| `nix-update` | すべての input と Linux 用 Codex のバイナリ情報を更新してから `nix-apply` |
 | `nix-clean` | 古い世代と、使われていない Nix store を削除 |
 
 - **未追跡のファイル**: Nix flake は Git に登録されていないファイルを無視します。`nix-apply` は未追跡のファイルがあると `git add` するか聞きます
 - **Linux（NixOS 以外）**: Home Manager のプロファイルを引数で渡します。省略すると `linux-headless` になるため、**GUI のマシンでは毎回 `nix-apply linux-gui` / `nix-update linux-gui` と指定してください**（忘れると Ghostty などの GUI 向け設定が外れます）
 - **GitHub の利用制限**: `nix-update` は `gh auth token` のトークンを Nix に渡して、GitHub API の利用回数制限（認証なしだと 1 時間 60 回）を避けます。トークンはファイルに保存しません
+- **Linux の Codex**: 公式のビルド済みパッケージを Home Manager で導入し、Rust のソースビルドを避けます。`nix-apply` は `packages/codex-binary/source.json` の固定版を適用し、`nix-update` は llm-agents の固定バージョンに合わせて配布物を取得・SHA-256 を更新してから適用します。Mac での `nix-update` でも Linux 用の情報を同期します。更新に失敗すると適用せず停止します。`flake.lock` と変更された `source.json` は一緒にコミットしてください。共有 Nix のキャッシュ設定変更や、Codex 用の手動 `nix copy` は不要です
 - **Mac App Store のアプリ**: `masApps` に追加したアプリも `nix-apply` で入ります（途中でパスワードを聞かれます。理由は [docs/architecture.md の bootstrap](docs/architecture.md#bootstrap)）。アプリ ID は `nix run nixpkgs#mas -- search <名前>` で調べられます
 
 <details>
@@ -110,6 +111,8 @@ Zellij の操作キーは macOS では Alt、Linux では Ctrl です。Linux �
 nix flake update            # すべての input を更新
 nix flake update nixpkgs    # 特定の input だけ更新
 ```
+
+`nix flake update` を直接実行しただけでは Linux 用 Codex の固定版は変わりません。Codex も同期する通常の更新には Nushell の `nix-update` を使ってください。
 
 </details>
 

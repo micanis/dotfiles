@@ -69,11 +69,58 @@ def nix-apply [profile?: string] {
     }
 }
 
-# Update all flake inputs, then apply.
+# Update all flake inputs and the official Linux Codex binary, then apply.
 def nix-update [profile?: string] {
     cd ~/.local/share/dotfiles
-    with-env (github-nix-config) { nix flake update }
+    with-env (github-nix-config) {
+        let updated = (do { ^nix flake update } | complete)
+        print -n $updated.stdout
+        print -en $updated.stderr
+        if $updated.exit_code != 0 {
+            error make { msg: "Flake update failed; configuration was not applied." }
+        }
+        update-codex-binary
+    }
     nix-apply $profile
+}
+
+# Run from the repository root. The input pins the version; this file pins the
+# official archive's contents. This also updates the Linux pin when run on Mac.
+def update-codex-binary [] {
+    let evaluated = (do {
+        ^nix --extra-experimental-features "nix-command flakes" eval --impure --raw --expr '(builtins.getFlake (toString ./.)).inputs.llm-agents.packages.x86_64-linux.codex.version'
+    } | complete)
+    if $evaluated.exit_code != 0 {
+        error make { msg: $"Could not determine the pinned Codex version: ($evaluated.stderr)" }
+    }
+    let version = ($evaluated.stdout | str trim)
+    if $version !~ '^\d+\.\d+\.\d+$' {
+        error make { msg: $"Unexpected Codex version: ($version)" }
+    }
+    let manifest = "packages/codex-binary/source.json"
+    let current = (open $manifest)
+    if $current.version == $version { return }
+
+    let url = $"https://github.com/openai/codex/releases/download/rust-v($version)/codex-package-x86_64-unknown-linux-musl.tar.gz"
+    print $"Fetching official Linux Codex ($version)..."
+    let fetched = (do {
+        ^nix --extra-experimental-features nix-command store prefetch-file --json --hash-type sha256 $url
+    } | complete)
+    if $fetched.exit_code != 0 {
+        error make { msg: $"Codex download failed; binary pin was not changed: ($fetched.stderr)" }
+    }
+    let hash = ($fetched.stdout | from json | get hash)
+    if $hash !~ '^sha256-[A-Za-z0-9+/]{43}=$' {
+        error make { msg: "Codex download returned an invalid SHA-256 hash; binary pin was not changed." }
+    }
+    let temporary = $"($manifest).(random uuid).tmp"
+    try {
+        {version: $version, hash: $hash} | to json --indent 2 | save $temporary
+        mv -f $temporary $manifest
+    } catch {|err|
+        if ($temporary | path exists) { rm $temporary }
+        error make { msg: $"Could not save the Codex binary pin: ($err.msg)" }
+    }
 }
 
 # Pass the gh token to Nix so GitHub API calls are not rate limited as
