@@ -1,5 +1,14 @@
 # User environment for every Linux host (NixOS and non-NixOS).
+{ pkgs, inputs, ... }:
+let
+  llmAgents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
+in
 {
+  home.packages = [
+    llmAgents.codex
+    llmAgents.claude-code
+  ];
+
   # Fresh Linux accounts commonly have .profile and .bashrc already.
   # This also applies when bootstrap runs the activation package directly.
   home.backupFileExtension = "before-home-manager";

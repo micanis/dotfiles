@@ -78,7 +78,7 @@ NixOS では `install.sh` を使いません（Linux と判定して standalone 
 | `homeConfigurations.linux-headless` | NixOS 以外の Linux サーバー | Home Manager (standalone) |
 | `nixosConfigurations.nixos` | NixOS | NixOS modules + Home Manager |
 
-主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Claude Code・Codex・Antigravity CLI（`agy`）を入れます。
+主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf・Claude Code・Codex など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Antigravity CLI（`agy`）を入れます。
 
 Zellij の操作キーは macOS では Alt、Linux では Ctrl です。Linux では `Ctrl+p` → `r` / `d` でペインを左右 / 上下に分割、`Ctrl+p` → `h/j/k/l` で移動、`Ctrl+t` → `n` でタブ作成、`Ctrl+o` → `d` でデタッチします。`Esc` で通常操作に戻り、`Ctrl+g` で Zellij のキー操作をロック・解除できます。Mac の Zellij 内から SSH する場合は、ローカルの Alt 操作と接続先の Ctrl 操作を使い分けます。
 
