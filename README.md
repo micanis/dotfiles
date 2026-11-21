@@ -42,6 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/micanis/dotfiles/main/bootstrap/ins
 導入が終わったらターミナルを開き直します。macOS ではログインシェルが Nushell に変わり、[日常の操作](#日常の操作) の関数が使えるようになります（Linux では `nu` を起動して使います）。
 
 Linux の standalone 構成は、実行ユーザーと `$HOME` に合わせて適用されます。`sudo` は付けず、利用するアカウントで実行してください。
+既存の `.profile`・`.bashrc` などは `.before-home-manager` を付けて退避します。同名の退避ファイルがある場合は、上書きせずに停止します。
 
 <details>
 <summary><b>macOS の初回だけ必要な作業</b> — <code>/etc/shells</code> の衝突、Raycast の登録</summary>
