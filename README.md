@@ -82,6 +82,8 @@ NixOS では `install.sh` を使いません（Linux と判定して standalone 
 
 Zellij の操作キーは macOS では Alt、Linux では Ctrl です。Linux では `Ctrl+p` → `r` / `d` でペインを左右 / 上下に分割、`Ctrl+p` → `h/j/k/l` で移動、`Ctrl+t` → `n` でタブ作成、`Ctrl+o` → `d` でデタッチします。`Esc` で通常操作に戻り、`Ctrl+g` で Zellij のキー操作をロック・解除できます。Mac の Zellij 内から SSH する場合は、ローカルの Alt 操作と接続先の Ctrl 操作を使い分けます。
 
+Zellij 0.45 以降の自動的な nested session への入力切り替えは `nested_session_handling "never"` で無効にしています。すでに内側へ入力を切り替えた状態（`Ascend` の表示）になっている場合は、SSH 先で `Ctrl+o` → `]` を押すか、外側のタブバーをクリックして外側へ制御を戻します。
+
 クリップボードへのコピーは両 OS とも `pbcopy` です。Nushell では `"コピーしたい文字列" | pbcopy`、ファイルなら `open --raw example.txt | pbcopy` と実行します。macOS は標準コマンド、Linux は環境に応じたラッパーを使います。SSH 接続では OSC 52 対応の接続元ターミナル（Ghostty など）のクリップボードへ送り、Linux のローカル GUI では Wayland の `wl-copy`、X11 の `xclip` を使います（両ツールは `linux-gui` に同梱）。GUI がない場合も、対応ターミナルがあれば OSC 52 を使います。Linux 版は標準入力のコピーのみ対応し、macOS 固有のオプションや `pbpaste` は提供しません。
 
 ## 日常の操作

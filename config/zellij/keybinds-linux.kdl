@@ -110,6 +110,7 @@ keybinds clear-defaults=true {
         bind "Esc" { UndoRenamePane; SwitchToMode "Pane"; }
     }
     session {
+        bind "]" { FocusHostSession; SwitchToMode "Normal"; }
         bind "q" { Quit; }
         bind "Ctrl o" { SwitchToMode "Normal"; }
         bind "Ctrl s" { SwitchToMode "Scroll"; }
