@@ -1,7 +1,11 @@
 # Additions for Linux hosts with a desktop.
 { pkgs, ... }:
 {
-  home.packages = [ pkgs.ghostty ];
+  home.packages = with pkgs; [
+    ghostty
+    wl-clipboard
+    xclip
+  ];
 
   xdg.configFile."ghostty".source = ../../../config/ghostty;
 }

@@ -4,6 +4,8 @@ let
   llmAgents = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
+  imports = [ ./clipboard.nix ];
+
   home.packages = [
     (pkgs.callPackage ../../../packages/codex-binary { })
     llmAgents.claude-code

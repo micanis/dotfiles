@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Read stdin like macOS pbcopy. SSH always targets the connecting terminal.
+set -euo pipefail
+
+if [[ $# -ne 0 ]]; then
+    printf 'usage: pbcopy < file  (or: command | pbcopy)\n' >&2
+    exit 2
+fi
+
+if [[ -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]]; then
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v wl-copy >/dev/null 2>&1; then
+        exec wl-copy
+    elif [[ -n "${DISPLAY:-}" ]] && command -v xclip >/dev/null 2>&1; then
+        exec xclip -selection clipboard -in
+    fi
+fi
+
+# OSC 52 copies through the terminal, including SSH and Zellij sessions.
+# Encode before command substitution so trailing newlines in stdin survive.
+payload=$(base64 --wrap=0)
+if [[ -t 1 ]]; then
+    printf '\033]52;c;%s\a' "$payload"
+elif ! { printf '\033]52;c;%s\a' "$payload" > /dev/tty; } 2>/dev/null; then
+    printf 'pbcopy: no desktop clipboard or controlling terminal is available.\n' >&2
+    exit 1
+fi
