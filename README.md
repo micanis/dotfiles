@@ -80,7 +80,7 @@ NixOS では `install.sh` を使いません（Linux と判定して standalone 
 
 主なツール（全環境共通）: Nushell・Starship・Zellij・Helix・Yazi・lazygit・gh・devbox・direnv（nix-direnv）・ripgrep・fd・bat・eza・fzf・Claude Code・Codex など。macOS では加えて Ghostty・Karabiner-Elements・Raycast・Antigravity CLI（`agy`）を入れます。
 
-Zellij の操作キーは macOS では Alt、Linux では Ctrl です。Linux では `Ctrl+p` → `r` / `d` でペインを左右 / 上下に分割、`Ctrl+p` → `h/j/k/l` で移動、`Ctrl+t` → `n` でタブ作成、`Ctrl+o` → `d` でデタッチします。`Esc` で通常操作に戻り、`Ctrl+g` で Zellij のキー操作をロック・解除できます。Mac の Zellij 内から SSH する場合は、ローカルの Alt 操作と接続先の Ctrl 操作を使い分けます。
+Zellij の操作キーは macOS では Alt、Linux では Zellij 標準の Ctrl 配置です。Linux では `Ctrl+p` → `r` / `d` でペインを左右 / 上下に分割、`Ctrl+p` → `h/j/k/l` でフォーカス移動、`Ctrl+t` → `n` でタブ作成、`Ctrl+n` でリサイズモード、`Ctrl+h` でペイン移動モード、`Ctrl+o` → `d` でデタッチ、`Ctrl+q` で終了します。`Esc` で通常操作に戻り、`Ctrl+g` で Zellij のキー操作をロック・解除できます。Linux 単体では標準の `Alt+n`（ペイン作成）なども使えます。Mac の Zellij 内から SSH する場合は、外側の Mac が Alt を処理し、接続先の Linux は Ctrl で操作します。
 
 Zellij 0.45 以降の自動的な nested session への入力切り替えは `nested_session_handling "never"` で無効にしています。すでに内側へ入力を切り替えた状態（`Ascend` の表示）になっている場合は、SSH 先で `Ctrl+o` → `]` を押すか、外側のタブバーをクリックして外側へ制御を戻します。
 
